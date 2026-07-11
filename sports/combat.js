@@ -120,7 +120,7 @@ window.RISKEM_SPORTS.combat = {
     { key: "round", label: "Finish round", type: "round", min: 1, defaultValue: 1 },
   ],
   propDefinitions: [
-    { key: "fastestFinish", label: "Fastest finish fight", type: "contest", derived: true, placeholder: "Auto from finish picks" },
+    { key: "fastestFinish", label: "Predicted fastest finish", type: "contest", derived: true, placeholder: "Auto from finish picks" },
     { key: "fightOfNight", label: "Fight of the night", type: "contest", placeholder: "Pick fight" },
     { key: "totalDecisions", label: "Total decisions", type: "number", min: 0, defaultValue: 0, derived: true },
     { key: "totalFinishes", label: "Total finishes", type: "number", min: 0, defaultValue: 0, derived: true },
@@ -200,7 +200,7 @@ window.RISKEM_SPORTS.combat = {
     const fastest = derived.fastestFinish ?? props?.fastestFinish;
     const decisions = derived.totalDecisions ?? props?.totalDecisions ?? "—";
     const finishes = derived.totalFinishes ?? props?.totalFinishes ?? "—";
-    return `Fastest finish: ${contestName(event, fastest) || "—"}<br><span class="fine">FOTN: ${contestName(event, props?.fightOfNight) || "—"} · Decisions ${decisions} · Finishes ${finishes}</span>`;
+    return `Predicted fastest finish: ${contestName(event, fastest) || "—"}<br><span class="fine">FOTN: ${contestName(event, props?.fightOfNight) || "—"} · Decisions ${decisions} · Finishes ${finishes}</span>`;
   },
   statusText(event) {
     const parts = (event.contests || []).map((contest) => {

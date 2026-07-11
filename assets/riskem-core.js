@@ -166,6 +166,32 @@
       }))
       .sort((a, b) => b.total - a.total || new Date(a.player.submittedAt || 0) - new Date(b.player.submittedAt || 0));
   }
+
+  function leaderLabel(ranked, completed) {
+    if (!ranked.length) return "—";
+    if (!completed) return "Open";
+
+    const top = Number(ranked[0].total || 0);
+    const tied = ranked.filter((row) => Math.abs(Number(row.total || 0) - top) < 0.005);
+
+    if (tied.length > 1) return `${tied.length}-way tie`;
+    return ranked[0].player.name || "—";
+  }
+
+  function contestTableLabels(event) {
+    const counts = (event.contests || []).reduce((map, contest) => {
+      const label = contest.label || contest.id;
+      map[label] = (map[label] || 0) + 1;
+      return map;
+    }, {});
+
+    return (event.contests || []).map((contest) => {
+      const label = contest.label || contest.id;
+      if (contest.tableLabel) return contest.tableLabel;
+      if (contest.shortLabel) return contest.shortLabel;
+      return counts[label] > 1 ? contest.id : label;
+    });
+  }
   function setHrefWithEvent(id, path, event) {
     const node = $(id);
     if (node) node.href = `${path}?event=${encodeURIComponent(event.id)}`;
@@ -256,7 +282,7 @@
 
     if ($("localImportNotice")) {
       $("localImportNotice").classList.toggle("hide", localCount === 0);
-      $("localImportNotice").textContent = localCount ? `${localCount} local test import${localCount === 1 ? "" : "s"} are being added on this device only. Add them to events/${event.id}.js for the public scoreboard.` : "";
+      $("localImportNotice").textContent = localCount ? `${localCount} local test import${localCount === 1 ? "" : "s"} active on this device only. Add them to events/${event.id}.js for the public scoreboard.` : "";
     }
 
     if ($("standings")) {
@@ -273,7 +299,7 @@
     if ($("updatedText")) $("updatedText").innerHTML = `Status<br>${sport.statusText ? sport.statusText(event) : "Ready"}`;
     if ($("playerCount")) $("playerCount").textContent = players.length;
     if ($("contestCount")) $("contestCount").textContent = `${completed} / ${(event.contests || []).length}`;
-    if ($("leaderName")) $("leaderName").textContent = ranked[0]?.player.name || "—";
+    if ($("leaderName")) $("leaderName").textContent = leaderLabel(ranked, completed);
     if ($("propsStatus")) $("propsStatus").textContent = event.finalProps?.complete ? "Final" : "Open";
 
     if ($("resultsGrid")) {
@@ -304,7 +330,7 @@
     }
     if ($("lockedTable")) {
       $("lockedTable").innerHTML = `
-        <thead><tr><th>Player</th>${(event.contests || []).map((c) => `<th>${h(c.label)}</th>`).join("")}<th>Props</th><th>Tiebreaker</th></tr></thead>
+        <thead><tr><th>Player</th>${contestTableLabels(event).map((label) => `<th>${h(label)}</th>`).join("")}<th>Props</th><th>Tiebreaker</th></tr></thead>
         <tbody>${players.map((player) => `
           <tr>
             <td><strong>${h(player.name)}</strong><br><span class="fine">Wagered ${money(totalWagered(player, event))}</span></td>
@@ -337,7 +363,7 @@
   function renderDetail(event, sport, players) {
     if ($("detailTable")) {
       $("detailTable").innerHTML = `
-        <thead><tr><th>Player</th>${(event.contests || []).map((c) => `<th>${h(c.label)}</th>`).join("")}<th>Bonus</th><th>Props</th><th>Total</th></tr></thead>
+        <thead><tr><th>Player</th>${contestTableLabels(event).map((label) => `<th>${h(label)}</th>`).join("")}<th>Bonus</th><th>Props</th><th>Total</th></tr></thead>
         <tbody>${players.map((player) => {
           const bonus = (event.contests || []).reduce((sum, contest) => sum + contestScore(player, contest, event, sport).bonus, 0);
           const props = propsScore(player, event, sport);

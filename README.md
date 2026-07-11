@@ -322,6 +322,19 @@ invalid fighter/team/entrant ids
 
 If old bad entries still show, click **Clear Local Imports** on the scoreboard and re-import clean submissions.
 
+
+## Scoreboard polish
+
+The scoreboard presentation uses a few safety-first display rules:
+
+```text
+Leader shows Open until the first result is complete.
+If leaders are tied after scoring starts, it shows 2-way tie / 3-way tie.
+Repeated contest labels use compact table headers like F3/F4/F5.
+Local test imports are labeled as active on this device only.
+User-side fastest finish is labeled Predicted fastest finish.
+```
+
 ## Existing F8WC safety
 
 Do not overwrite the existing live F8WC repo root unless you are ready to promote this version.
