@@ -12,7 +12,8 @@ const UFC_329_EVENT = {
   subtitle: "McGregor vs Holloway 2 · Main Card · Saturday 6:00 PM",
   shortLabel: "UFC 329",
   currency: "Fight Bucks",
-  publicNote: "Main-card fight pool. Users pick winners, wagers, method, finish round where valid, and Fight of the Night. AVG odds plus fastest-finish/decision/finish props are automatic.",
+  publicNote:
+    "Pick each fight, choose your wager, and make your Fight of the Night pick. The scoreboard updates after entries are submitted.",
   revealLockedPicks: true,
   entriesLocked: false,
   rules: {
@@ -42,8 +43,18 @@ const UFC_329_EVENT = {
         "max-holloway": { method: "KO/TKO", round: 4 },
       },
       entrants: [
-        { id: "conor-mcgregor", name: "Conor McGregor", record: "22-6-0", odds: null },
-        { id: "max-holloway", name: "Max Holloway", record: "27-9-0", odds: null },
+        {
+          id: "conor-mcgregor",
+          name: "Conor McGregor",
+          record: "22-6-0",
+          odds: null,
+        },
+        {
+          id: "max-holloway",
+          name: "Max Holloway",
+          record: "27-9-0",
+          odds: null,
+        },
       ],
     },
     {
@@ -60,8 +71,18 @@ const UFC_329_EVENT = {
         "paddy-pimblett": { method: "Decision" },
       },
       entrants: [
-        { id: "benoit-saint-denis", name: "Benoit Saint-Denis", record: "17-3-0, 1NC", odds: null },
-        { id: "paddy-pimblett", name: "Paddy Pimblett", record: "23-4-0", odds: null },
+        {
+          id: "benoit-saint-denis",
+          name: "Benoit Saint-Denis",
+          record: "17-3-0, 1NC",
+          odds: null,
+        },
+        {
+          id: "paddy-pimblett",
+          name: "Paddy Pimblett",
+          record: "23-4-0",
+          odds: null,
+        },
       ],
     },
     {
@@ -78,8 +99,18 @@ const UFC_329_EVENT = {
         "mario-bautista": { method: "Decision" },
       },
       entrants: [
-        { id: "cory-sandhagen", name: "Cory Sandhagen", record: "18-6-0", odds: null },
-        { id: "mario-bautista", name: "Mario Bautista", record: "17-3-0", odds: null },
+        {
+          id: "cory-sandhagen",
+          name: "Cory Sandhagen",
+          record: "18-6-0",
+          odds: null,
+        },
+        {
+          id: "mario-bautista",
+          name: "Mario Bautista",
+          record: "17-3-0",
+          odds: null,
+        },
       ],
     },
     {
@@ -96,8 +127,18 @@ const UFC_329_EVENT = {
         "loneer-kavanagh": { method: "Decision" },
       },
       entrants: [
-        { id: "brandon-royval", name: "Brandon Royval", record: "17-9-0", odds: null },
-        { id: "loneer-kavanagh", name: "Lone’er Kavanagh", record: "10-1-0", odds: null },
+        {
+          id: "brandon-royval",
+          name: "Brandon Royval",
+          record: "17-9-0",
+          odds: null,
+        },
+        {
+          id: "loneer-kavanagh",
+          name: "Lone’er Kavanagh",
+          record: "10-1-0",
+          odds: null,
+        },
       ],
     },
     {
@@ -114,8 +155,18 @@ const UFC_329_EVENT = {
         "terrance-mckinney": { method: "Submission", round: 1 },
       },
       entrants: [
-        { id: "king-green", name: "King Green", record: "35-17-1, 1NC", odds: null },
-        { id: "terrance-mckinney", name: "Terrance McKinney", record: "18-8-0", odds: null },
+        {
+          id: "king-green",
+          name: "King Green",
+          record: "35-17-1, 1NC",
+          odds: null,
+        },
+        {
+          id: "terrance-mckinney",
+          name: "Terrance McKinney",
+          record: "18-8-0",
+          odds: null,
+        },
       ],
     },
   ],
@@ -136,7 +187,212 @@ const UFC_329_EVENT = {
     totalDecisions: null,
     totalFinishes: null,
   },
-  players: [],
+  players: [
+    {
+      name: "Bam Bam 1",
+      submittedAt: "2026-07-11T06:25:59.070Z",
+      picks: {
+        F1: {
+          selectionId: "max-holloway",
+          wager: 100,
+          odds: -227,
+          oddsSource: "AVG",
+          oddsSnapshotId: "ufc-329",
+          oddsSnapshotLabel: "Manual market snapshot + AVG",
+          oddsSources: {
+            fanduel: -225,
+            draftkings: -230,
+            avg: -227,
+          },
+          prediction: {
+            method: "KO/TKO",
+            round: 4,
+          },
+        },
+        F2: {
+          selectionId: "benoit-saint-denis",
+          wager: 50,
+          odds: -157,
+          oddsSource: "AVG",
+          oddsSnapshotId: "ufc-329",
+          oddsSnapshotLabel: "Manual market snapshot + AVG",
+          oddsSources: {
+            fanduel: -155,
+            draftkings: -160,
+            avg: -157,
+          },
+          prediction: {
+            method: "KO/TKO",
+            round: 2,
+          },
+        },
+        F3: {
+          selectionId: "mario-bautista",
+          wager: 50,
+          odds: 132,
+          oddsSource: "AVG",
+          oddsSnapshotId: "ufc-329",
+          oddsSnapshotLabel: "Manual market snapshot + AVG",
+          oddsSources: {
+            fanduel: 130,
+            draftkings: 135,
+            avg: 132,
+          },
+          prediction: {
+            method: "Decision",
+            round: null,
+          },
+        },
+        F4: {
+          selectionId: "loneer-kavanagh",
+          wager: 50,
+          odds: -232,
+          oddsSource: "AVG",
+          oddsSnapshotId: "ufc-329",
+          oddsSnapshotLabel: "Manual market snapshot + AVG",
+          oddsSources: {
+            fanduel: -235,
+            draftkings: -230,
+            avg: -232,
+          },
+          prediction: {
+            method: "Decision",
+            round: null,
+          },
+        },
+        F5: {
+          selectionId: "terrance-mckinney",
+          wager: 50,
+          odds: -168,
+          oddsSource: "AVG",
+          oddsSnapshotId: "ufc-329",
+          oddsSnapshotLabel: "Manual market snapshot + AVG",
+          oddsSources: {
+            fanduel: -166,
+            draftkings: -170,
+            avg: -168,
+          },
+          prediction: {
+            method: "Submission",
+            round: 1,
+          },
+        },
+      },
+      props: {
+        fastestFinish: "F5",
+        fightOfNight: "F4",
+        totalDecisions: 2,
+        totalFinishes: 3,
+      },
+      derivedProps: {
+        fastestFinish: "F5",
+        totalDecisions: 2,
+        totalFinishes: 3,
+      },
+    },
+    {
+      name: "Bam Bam 2",
+      submittedAt: "2026-07-11T06:26:30.774Z",
+      picks: {
+        F1: {
+          selectionId: "max-holloway",
+          wager: 50,
+          odds: -227,
+          oddsSource: "AVG",
+          oddsSnapshotId: "ufc-329",
+          oddsSnapshotLabel: "Manual market snapshot + AVG",
+          oddsSources: {
+            fanduel: -225,
+            draftkings: -230,
+            avg: -227,
+          },
+          prediction: {
+            method: "KO/TKO",
+            round: 4,
+          },
+        },
+        F2: {
+          selectionId: "benoit-saint-denis",
+          wager: 50,
+          odds: -157,
+          oddsSource: "AVG",
+          oddsSnapshotId: "ufc-329",
+          oddsSnapshotLabel: "Manual market snapshot + AVG",
+          oddsSources: {
+            fanduel: -155,
+            draftkings: -160,
+            avg: -157,
+          },
+          prediction: {
+            method: "KO/TKO",
+            round: 2,
+          },
+        },
+        F3: {
+          selectionId: "mario-bautista",
+          wager: 50,
+          odds: 132,
+          oddsSource: "AVG",
+          oddsSnapshotId: "ufc-329",
+          oddsSnapshotLabel: "Manual market snapshot + AVG",
+          oddsSources: {
+            fanduel: 130,
+            draftkings: 135,
+            avg: 132,
+          },
+          prediction: {
+            method: "Decision",
+            round: null,
+          },
+        },
+        F4: {
+          selectionId: "loneer-kavanagh",
+          wager: 50,
+          odds: -232,
+          oddsSource: "AVG",
+          oddsSnapshotId: "ufc-329",
+          oddsSnapshotLabel: "Manual market snapshot + AVG",
+          oddsSources: {
+            fanduel: -235,
+            draftkings: -230,
+            avg: -232,
+          },
+          prediction: {
+            method: "Decision",
+            round: null,
+          },
+        },
+        F5: {
+          selectionId: "terrance-mckinney",
+          wager: 100,
+          odds: -168,
+          oddsSource: "AVG",
+          oddsSnapshotId: "ufc-329",
+          oddsSnapshotLabel: "Manual market snapshot + AVG",
+          oddsSources: {
+            fanduel: -166,
+            draftkings: -170,
+            avg: -168,
+          },
+          prediction: {
+            method: "Submission",
+            round: 1,
+          },
+        },
+      },
+      props: {
+        fastestFinish: "F5",
+        fightOfNight: "F4",
+        totalDecisions: 2,
+        totalFinishes: 3,
+      },
+      derivedProps: {
+        fastestFinish: "F5",
+        totalDecisions: 2,
+        totalFinishes: 3,
+      },
+    },
+  ],
 };
 
 window.RISKEM_EVENTS["ufc-324"] = UFC_329_EVENT;
