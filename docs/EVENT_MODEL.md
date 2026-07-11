@@ -82,3 +82,22 @@ F1: {
   time: "3:14"
 }
 ```
+
+
+## Submission audit fields
+
+Built submissions store locked odds from the selected entrant, plus the snapshot id/label.
+
+```js
+odds: -227,
+oddsSource: "AVG",
+oddsSnapshotId: "ufc-329-manual-2026-07-10",
+oddsSnapshotLabel: "Manual market snapshot + AVG",
+derivedProps: {
+  fastestFinish: "F5",
+  totalDecisions: 2,
+  totalFinishes: 3
+}
+```
+
+Derived props are also mirrored into `props` for scoring compatibility.

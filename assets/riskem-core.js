@@ -43,6 +43,33 @@
     if (!w || !o) return 0;
     return o > 0 ? (w * o) / 100 : (w * 100) / Math.abs(o);
   }
+  function resolvedRules(event) {
+    const raw = event.rules || {};
+    const contestCount = Math.max(1, (event.contests || []).length);
+
+    // Platform default: every contest contributes one $100 budget unit.
+    // This keeps UFC cards, football slates, soccer rounds, boxing cards,
+    // and racing events proportional without hand-tuning every event.
+    const unit = Number(raw.unitPerContest || raw.averageBudget || raw.budgetPerContest || 100);
+    const budget = Number(raw.budget ?? unit * contestCount);
+    const base = budget ? budget / contestCount : unit;
+
+    const minWager = Number(raw.minWager ?? Math.round(base * Number(raw.minWagerPct ?? 0.25)));
+    const defaultMaxWager = Math.min(budget || Infinity, Math.round(base * Number(raw.maxWagerPct ?? 1.5)));
+    const maxWager = Number(raw.maxWager ?? defaultMaxWager);
+    const minTotalWager = Number(raw.minTotalWager ?? Math.round(budget * Number(raw.minTotalPct ?? 0.5)));
+    const maxTotalWager = Number(raw.maxTotalWager ?? Math.round(budget * Number(raw.maxTotalPct ?? 1)));
+
+    return {
+      ...raw,
+      budget,
+      minWager,
+      maxWager,
+      minTotalWager,
+      maxTotalWager,
+      unitPerContest: unit,
+    };
+  }
   function eventIds() {
     const order = window.RISKEM_EVENT_ORDER || [];
     const all = Object.keys(window.RISKEM_EVENTS || {});
@@ -125,7 +152,7 @@
   }
   function totalFor(player, event, sport) {
     const contests = (event.contests || []).reduce((sum, contest) => sum + contestScore(player, contest, event, sport).total, 0);
-    return Number(event.rules?.budget || 0) + contests + propsScore(player, event, sport);
+    return Number(resolvedRules(event).budget || 0) + contests + propsScore(player, event, sport);
   }
   function rankedPlayers(event, sport) {
     return allPlayers(event)
@@ -162,7 +189,7 @@
     if ($("heroTitle")) $("heroTitle").innerHTML = h(event.title).replace("Risk’em", `<span class="gold">Risk’em</span>`);
     if ($("heroSub")) $("heroSub").textContent = event.subtitle || "";
     if ($("rulesHint")) {
-      const rules = event.rules || {};
+      const rules = resolvedRules(event);
       $("rulesHint").textContent = `${event.currency || sport.currencyFallback}: ${money(rules.budget)} budget · ${money(rules.minWager)}–${money(rules.maxWager)} per pick · minimum total wager ${money(rules.minTotalWager)}.`;
     }
     if ($("publicNote")) $("publicNote").textContent = event.publicNote || "";
@@ -204,7 +231,7 @@
     const snapshot = event.oddsSnapshot || {};
     if ($("oddsHint")) {
       const pulled = snapshot.pulledAt ? ` · ${snapshot.pulledAt}` : "";
-      $("oddsHint").textContent = `${snapshot.sourceLabel || "FanDuel + DraftKings AVG"}${pulled}. AVG fills the locked odds box unless edited by the commissioner/player.`;
+      $("oddsHint").textContent = `${snapshot.sourceLabel || "FanDuel + DraftKings AVG"}${pulled}. AVG is locked for each selected entrant. Players cannot edit locked odds.`;
     }
 
     board.innerHTML = (event.contests || []).map((contest) => `
@@ -381,7 +408,7 @@
         </div>
       </section>
       <section class="panel">
-        <div class="section-head"><div><h2>${h(sport.contestNounPlural || "Contests")}</h2><div class="hint">Pick each winner, enter wager, locked odds, and sport-specific prediction fields.</div></div><div class="updated" id="wagerStatus"></div></div>
+        <div class="section-head"><div><h2>${h(sport.contestNounPlural || "Contests")}</h2><div class="hint">Pick winners and wagers only. AVG odds, finish-round validity, and derived props update automatically.</div></div><div class="updated" id="wagerStatus"></div></div>
         <div class="form-grid-stack" id="contestInputs"></div>
       </section>
       <section class="panel">
@@ -398,7 +425,8 @@
     renderContestInputs(event, sport);
     renderPropInputs(event, sport);
     updateWagerStatus(event);
-    form.addEventListener("input", () => updateWagerStatus(event));
+    form.addEventListener("input", () => { updateWagerStatus(event); updateDerivedProps(event, sport); });
+    form.addEventListener("change", () => { updateWagerStatus(event); updateDerivedProps(event, sport); });
     $("buildSubmission").onclick = () => {
       try { $("submissionOutput").textContent = JSON.stringify(buildSubmission(event, sport), null, 2); }
       catch (err) { alert(err.message); }
@@ -429,6 +457,16 @@
   function contestDefaultSelection(contest) {
     return contest.defaultSelectionId || contest.entrants?.[0]?.id || "";
   }
+  function isDecisionMethod(method) {
+    return normalizeText(method) === "decision";
+  }
+  function isNoContestMethod(method) {
+    const normalized = normalizeText(method);
+    return normalized === "no contest" || normalized === "draw no contest";
+  }
+  function isFinishMethod(method) {
+    return Boolean(method) && !isDecisionMethod(method) && !isNoContestMethod(method);
+  }
 
   function predictionDefaultValue(contest, selectionId, field) {
     const selectedDefaults = contest.predictionDefaults?.[selectionId] || {};
@@ -438,8 +476,8 @@
     if (commonDefaults[field.key] !== undefined) return commonDefaults[field.key];
 
     const methodDefault = selectedDefaults.method ?? commonDefaults.method ?? field.defaultValue;
-    if (field.key === "round" && normalizeText(methodDefault) === "decision") {
-      return contest.scheduledRounds || field.defaultValue || 3;
+    if (field.key === "round" && isDecisionMethod(methodDefault)) {
+      return "";
     }
 
     return field.defaultValue ?? "";
@@ -455,6 +493,28 @@
     }
   }
 
+  function syncMethodRoundState(contest) {
+    const methodNode = document.querySelector(`[data-prediction="method"][data-contest="${CSS.escape(contest.id)}"]`);
+    const roundNode = document.querySelector(`[data-prediction="round"][data-contest="${CSS.escape(contest.id)}"]`);
+    const roundLabel = document.querySelector(`[data-prediction-label="round"][data-contest="${CSS.escape(contest.id)}"]`);
+    if (!methodNode || !roundNode) return;
+
+    if (isDecisionMethod(methodNode.value) || isNoContestMethod(methodNode.value)) {
+      roundNode.value = "";
+      roundNode.disabled = true;
+      roundLabel?.classList.add("hide");
+      return;
+    }
+
+    roundNode.disabled = false;
+    roundLabel?.classList.remove("hide");
+
+    const maxRound = Number(contest.scheduledRounds || roundNode.max || 0);
+    const current = Number(roundNode.value || 0);
+    if (!current || current < 1) roundNode.value = "1";
+    if (maxRound && Number(roundNode.value) > maxRound) roundNode.value = String(maxRound);
+  }
+
   function bindMethodRoundAutomation(sport, contest) {
     const methodNode = document.querySelector(`[data-prediction="method"][data-contest="${CSS.escape(contest.id)}"]`);
     const roundNode = document.querySelector(`[data-prediction="round"][data-contest="${CSS.escape(contest.id)}"]`);
@@ -465,23 +525,26 @@
       const selectedId = pickNode?.value || contestDefaultSelection(contest);
       const selectedDefaults = contest.predictionDefaults?.[selectedId] || {};
 
-      if (normalizeText(methodNode.value) === "decision") {
-        roundNode.value = contest.scheduledRounds || 3;
-        return;
-      }
-
       if (selectedDefaults.method && normalizeText(selectedDefaults.method) === normalizeText(methodNode.value)) {
         roundNode.value = selectedDefaults.round ?? roundNode.value;
       }
+
+      syncMethodRoundState(contest);
     });
+
+    roundNode.addEventListener("change", () => syncMethodRoundState(contest));
+    roundNode.addEventListener("input", () => syncMethodRoundState(contest));
+
+    syncMethodRoundState(contest);
   }
 
   function renderContestInputs(event, sport) {
     const box = $("contestInputs");
     if (!box) return;
     box.innerHTML = (event.contests || []).map((contest) => {
+      const rules = resolvedRules(event);
       const defaultSelectionId = contestDefaultSelection(contest);
-      const defaultWager = contest.defaultWager ?? event.rules?.minWager ?? 25;
+      const defaultWager = contest.defaultWager ?? rules.minWager ?? 25;
       const entrantOptions = (contest.entrants || []).map((entrant) => {
         const sourceText = oddsLabel(entrant.oddsSources);
         const priceText = sourceText ? ` AVG ${fmtOdds(entrant.odds)}` : (entrant.odds ? ` ${fmtOdds(entrant.odds)}` : "");
@@ -493,8 +556,8 @@
         <div class="match-meta">${h([contest.weight, contest.scheduled].filter(Boolean).join(" · "))}</div>
         <div class="form-grid" style="margin-top:12px">
           <label>${h(sport.pickLabel || "Pick")}<select data-field="selectionId" data-contest="${h(contest.id)}">${entrantOptions}</select></label>
-          <label>Wager<input data-field="wager" data-contest="${h(contest.id)}" type="number" min="${h(event.rules?.minWager || 0)}" max="${h(event.rules?.maxWager || 9999)}" step="1" value="${h(defaultWager)}" /></label>
-          <label>Locked odds / AVG<input data-field="odds" data-contest="${h(contest.id)}" type="number" step="1" placeholder="auto AVG or manual" /></label>
+          <label>Wager<input data-field="wager" data-contest="${h(contest.id)}" type="number" min="${h(rules.minWager || 0)}" max="${h(rules.maxWager || 9999)}" step="1" value="${h(defaultWager)}" /></label>
+          <label>Locked AVG odds<input data-field="odds" data-contest="${h(contest.id)}" type="text" readonly aria-readonly="true" tabindex="-1" placeholder="auto AVG" /></label>
           ${renderPredictionInputs(event, sport, contest)}
         </div>
       </div>`;
@@ -512,11 +575,14 @@
       select?.addEventListener("change", () => {
         syncOdds(true);
         applyPredictionDefaults(sport, contest, select.value, true);
+        syncMethodRoundState(contest);
+        updateDerivedProps(event, sport);
       });
 
       syncOdds(false);
       applyPredictionDefaults(sport, contest, select?.value || contestDefaultSelection(contest), false);
       bindMethodRoundAutomation(sport, contest);
+      updateDerivedProps(event, sport);
     });
   }
 
@@ -524,14 +590,21 @@
     const defaultSelectionId = contestDefaultSelection(contest);
     return (sport.predictionFields || []).map((field) => {
       const base = `data-prediction="${h(field.key)}" data-contest="${h(contest.id)}"`;
+      const labelBase = `data-prediction-label="${h(field.key)}" data-contest="${h(contest.id)}"`;
       const defaultValue = predictionDefaultValue(contest, defaultSelectionId, field);
       if (field.type === "select") {
-        return `<label>${h(field.label)}<select ${base}>${(field.options || []).map((o) => `<option value="${h(o)}" ${o === defaultValue ? "selected" : ""}>${h(o)}</option>`).join("")}</select></label>`;
+        return `<label ${labelBase}>${h(field.label)}<select ${base}>${(field.options || []).map((o) => `<option value="${h(o)}" ${o === defaultValue ? "selected" : ""}>${h(o)}</option>`).join("")}</select></label>`;
       }
       if (field.type === "entrant") {
-        return `<label>${h(field.label)}<select ${base}><option value="">—</option>${(contest.entrants || []).map((e) => `<option value="${h(e.id)}" ${e.id === defaultValue ? "selected" : ""}>${h(e.name)}</option>`).join("")}</select></label>`;
+        return `<label ${labelBase}>${h(field.label)}<select ${base}><option value="">—</option>${(contest.entrants || []).map((e) => `<option value="${h(e.id)}" ${e.id === defaultValue ? "selected" : ""}>${h(e.name)}</option>`).join("")}</select></label>`;
       }
-      return `<label>${h(field.label)}<input ${base} type="${h(field.type || "text")}" ${field.min !== undefined ? `min="${h(field.min)}"` : ""} value="${h(defaultValue)}" /></label>`;
+      if (field.key === "round") {
+        const maxRound = Number(contest.scheduledRounds || field.max || 3);
+        const options = Array.from({ length: Math.max(1, maxRound) }, (_, i) => String(i + 1));
+        return `<label ${labelBase}>${h(field.label || "Finish round")}<select ${base}><option value="">—</option>${options.map((o) => `<option value="${h(o)}" ${String(o) === String(defaultValue) ? "selected" : ""}>Round ${h(o)}</option>`).join("")}</select></label>`;
+      }
+      const dynamicMax = field.key === "round" ? contest.scheduledRounds : field.max;
+      return `<label ${labelBase}>${h(field.label)}<input ${base} type="${h(field.type || "text")}" ${field.min !== undefined ? `min="${h(field.min)}"` : ""} ${dynamicMax !== undefined ? `max="${h(dynamicMax)}"` : ""} value="${h(defaultValue)}" /></label>`;
     }).join("");
   }
 
@@ -542,14 +615,26 @@
     box.innerHTML = (sport.propDefinitions || []).map((field) => {
       const base = `data-prop="${h(field.key)}"`;
       const defaultValue = propDefaults[field.key] ?? field.defaultValue ?? "";
+      const derived = Boolean(field.derived);
       if (field.type === "contest") {
-        return `<label>${h(field.label)}<select ${base}><option value="">—</option>${(event.contests || []).map((c) => `<option value="${h(c.id)}" ${c.id === defaultValue ? "selected" : ""}>${h(c.label)} · ${h((c.entrants || []).map((e) => e.name).join(" vs "))}</option>`).join("")}</select></label>`;
+        return `<label>${h(field.label)}<select ${base} ${derived ? "disabled" : ""}><option value="">—</option>${(event.contests || []).map((c) => `<option value="${h(c.id)}" ${c.id === defaultValue ? "selected" : ""}>${h(c.label)} · ${h((c.entrants || []).map((e) => e.name).join(" vs "))}</option>`).join("")}</select></label>`;
       }
       if (field.type === "select") {
-        return `<label>${h(field.label)}<select ${base}>${(field.options || []).map((o) => `<option value="${h(o)}" ${o === defaultValue ? "selected" : ""}>${h(o)}</option>`).join("")}</select></label>`;
+        return `<label>${h(field.label)}<select ${base} ${derived ? "disabled" : ""}>${(field.options || []).map((o) => `<option value="${h(o)}" ${o === defaultValue ? "selected" : ""}>${h(o)}</option>`).join("")}</select></label>`;
       }
-      return `<label>${h(field.label)}<input ${base} type="${h(field.type || "text")}" ${field.min !== undefined ? `min="${h(field.min)}"` : ""} value="${h(defaultValue)}" placeholder="${h(field.placeholder || "")}" /></label>`;
+      return `<label>${h(field.label)}<input ${base} type="${h(field.type || "text")}" ${field.min !== undefined ? `min="${h(field.min)}"` : ""} value="${h(defaultValue)}" placeholder="${h(field.placeholder || "")}" ${derived ? `readonly aria-readonly="true" tabindex="-1"` : ""} /></label>`;
     }).join("");
+    updateDerivedProps(event, sport);
+  }
+
+  function updateDerivedProps(event, sport) {
+    if (!sport?.derivePropsFromForm) return;
+    const derived = sport.derivePropsFromForm(event) || {};
+    for (const [key, value] of Object.entries(derived)) {
+      const node = document.querySelector(`[data-prop="${CSS.escape(key)}"]`);
+      if (!node) continue;
+      node.value = value ?? "";
+    }
   }
 
   function updateWagerStatus(event) {
@@ -557,37 +642,44 @@
       const input = document.querySelector(`[data-field="wager"][data-contest="${CSS.escape(contest.id)}"]`);
       return sum + Number(input?.value || 0);
     }, 0);
-    const min = Number(event.rules?.minTotalWager || 0);
-    const max = Number(event.rules?.maxTotalWager || event.rules?.budget || 0);
+    const rules = resolvedRules(event);
+    const min = Number(rules.minTotalWager || 0);
+    const max = Number(rules.maxTotalWager || rules.budget || 0);
     const ok = total >= min && total <= max;
     if ($("wagerStatus")) $("wagerStatus").innerHTML = `Wagered<br>${money(total)} / ${money(max)}`;
     if ($("wagerStatus")) $("wagerStatus").style.color = ok ? "#0f8f62" : "#b42318";
   }
 
   function buildSubmission(event, sport) {
+    updateDerivedProps(event, sport);
     const name = ($("playerName")?.value || "").trim();
     if (!name) throw new Error("Enter player name.");
-    const player = { name, submittedAt: new Date().toISOString(), picks: {}, props: {} };
+    const player = { name, submittedAt: new Date().toISOString(), picks: {}, props: {}, derivedProps: {} };
     for (const contest of event.contests || []) {
       const selectionId = document.querySelector(`[data-field="selectionId"][data-contest="${CSS.escape(contest.id)}"]`)?.value;
       const wager = Number(document.querySelector(`[data-field="wager"][data-contest="${CSS.escape(contest.id)}"]`)?.value || 0);
       const oddsRaw = document.querySelector(`[data-field="odds"][data-contest="${CSS.escape(contest.id)}"]`)?.value;
-      const odds = oddsRaw === "" ? null : Number(oddsRaw);
       const selectedEntrant = (contest.entrants || []).find((entrant) => entrant.id === selectionId);
+      const odds = selectedEntrant?.odds !== null && selectedEntrant?.odds !== undefined && selectedEntrant?.odds !== ""
+        ? Number(selectedEntrant.odds)
+        : (oddsRaw === "" ? null : Number(oddsRaw));
       if (!selectionId) throw new Error(`Missing pick for ${contest.label}.`);
       if (!wager) throw new Error(`Missing wager for ${contest.label}.`);
-      if (odds === null || !Number.isFinite(odds) || odds === 0) throw new Error(`Missing locked odds for ${contest.label}.`);
+      if (odds === null || !Number.isFinite(odds) || odds === 0) throw new Error(`Missing locked AVG odds for ${contest.label}. Update the event odds snapshot.`);
       const prediction = {};
       for (const field of sport.predictionFields || []) {
         const node = document.querySelector(`[data-prediction="${CSS.escape(field.key)}"][data-contest="${CSS.escape(contest.id)}"]`);
-        const raw = node?.value ?? "";
-        prediction[field.key] = field.type === "number" ? Number(raw) : raw;
+        const raw = node?.disabled ? "" : (node?.value ?? "");
+        prediction[field.key] = field.type === "number" ? (raw === "" ? null : Number(raw)) : raw;
       }
+      if (sport.validatePrediction) sport.validatePrediction(prediction, contest);
       player.picks[contest.id] = {
         selectionId,
         wager,
         odds,
-        oddsSource: selectedEntrant?.oddsSources ? (event.oddsSnapshot?.sourceLabel || "AVG") : "Manual",
+        oddsSource: selectedEntrant?.oddsSources ? "AVG" : "Manual",
+        oddsSnapshotId: event.oddsSnapshot?.id || event.id,
+        oddsSnapshotLabel: event.oddsSnapshot?.sourceLabel || "",
         oddsSources: selectedEntrant?.oddsSources || null,
         prediction,
       };
@@ -595,11 +687,14 @@
     for (const field of sport.propDefinitions || []) {
       const node = document.querySelector(`[data-prop="${CSS.escape(field.key)}"]`);
       const raw = node?.value ?? "";
-      player.props[field.key] = field.type === "number" ? Number(raw) : raw;
+      const value = field.type === "number" ? Number(raw || 0) : raw;
+      player.props[field.key] = value;
+      if (field.derived) player.derivedProps[field.key] = value;
     }
     const total = totalWagered(player, event);
-    const min = Number(event.rules?.minTotalWager || 0);
-    const max = Number(event.rules?.maxTotalWager || event.rules?.budget || Infinity);
+    const rules = resolvedRules(event);
+    const min = Number(rules.minTotalWager || 0);
+    const max = Number(rules.maxTotalWager || rules.budget || Infinity);
     if (total < min) throw new Error(`Total wager is ${money(total)}. Minimum is ${money(min)}.`);
     if (total > max) throw new Error(`Total wager is ${money(total)}. Maximum is ${money(max)}.`);
     return player;
@@ -608,6 +703,7 @@
   window.normalizeText = normalizeText;
   window.entrantName = entrantName;
   window.contestName = contestName;
+  window.resolvedRiskemRules = resolvedRules;
 
   document.addEventListener("DOMContentLoaded", () => {
     const event = getEvent();

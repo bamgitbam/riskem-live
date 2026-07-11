@@ -484,3 +484,9 @@ label {
   .odds-row { grid-template-columns: 1fr; gap: 3px; }
   .odds-row span { text-align: left; }
 }
+
+input[readonly], select:disabled {
+  background: #f6f9fd;
+  color: #415168;
+  cursor: not-allowed;
+}

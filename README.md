@@ -145,8 +145,27 @@ For UFC / MMA / boxing style events:
 Correct winner = locked-odds wager profit
 Wrong winner = loses wager
 Correct method = +25
-Correct round = +25
+Correct finish round = +25
+Decision / No Contest = no finish-round field and no round bonus
 Final props apply only when finalProps.complete is true
+```
+
+## Platform rule model
+
+```text
+User-entered fields = true picks only
+Derived fields = automatic
+Commissioner-only fields = final results only
+
+Budget = $100 × number of contests
+Default pick range = $25–$150, capped by event budget
+Minimum total wager = 50% of event budget
+Maximum total wager = 100% of event budget
+Unspent budget is allowed
+
+Odds = AVG line only, locked automatically from the selected entrant
+Fastest finish / total decisions / total finishes = derived from player picks
+Fight of the Night = user-selected prop
 ```
 
 ## Soccer scoring
@@ -277,3 +296,35 @@ Existing repo sandbox: /v2/
 ## UFC 329 autofill update
 
 The UFC card now includes default wagers, AVG locked odds, recommended method/round defaults by selected fighter, and default fight props. The old `event=ufc-324` URL remains available as a compatibility alias, but `event=ufc-329` is the cleaner public URL.
+
+## UFC 329 automation update
+
+Combat entry rules now use the normalized unit policy:
+
+```text
+Budget = $100 × number of contests
+Minimum pick = 25% of average contest budget
+Maximum pick = 150% of average contest budget
+Minimum total wager = 50% of event budget
+Maximum total wager = 100% of event budget
+Unspent budget is allowed
+```
+
+For a 5-fight UFC main card this becomes:
+
+```text
+Budget: $500
+Pick range: $25–$150
+Minimum total wager: $250
+Maximum total wager: $500
+```
+
+UFC fields now automate:
+
+```text
+Locked odds / AVG is read-only for players
+Decision hides/disables finish round
+Finish methods require a valid finish round within scheduled rounds
+Earliest finish fight is derived from the earliest selected finish round
+Total decisions and total finishes are derived from method picks
+```

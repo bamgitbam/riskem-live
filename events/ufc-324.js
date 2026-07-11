@@ -12,14 +12,19 @@ const UFC_329_EVENT = {
   subtitle: "McGregor vs Holloway 2 · Main Card · Saturday 6:00 PM",
   shortLabel: "UFC 329",
   currency: "Fight Bucks",
-  publicNote: "Main-card fight pool. Locked odds auto-fill from the published odds snapshot and can still be manually overridden before entries lock.",
+  publicNote: "Main-card fight pool. Users pick winners, wagers, method, finish round where valid, and Fight of the Night. AVG odds plus fastest-finish/decision/finish props are automatic.",
   revealLockedPicks: true,
   rules: {
-    budget: 400,
+    unitPerContest: 100,
+    minWagerPct: 0.25,
+    maxWagerPct: 1.5,
+    minTotalPct: 0.5,
+    maxTotalPct: 1,
+    budget: 500,
     minWager: 25,
     maxWager: 150,
-    minTotalWager: 200,
-    maxTotalWager: 400,
+    minTotalWager: 250,
+    maxTotalWager: 500,
   },
   contests: [
     {
@@ -29,7 +34,7 @@ const UFC_329_EVENT = {
       weight: "Welterweight",
       scheduled: "Saturday, 6:00 PM",
       scheduledRounds: 5,
-      defaultWager: 100,
+      defaultWager: 50,
       defaultSelectionId: "max-holloway",
       predictionDefaults: {
         "conor-mcgregor": { method: "KO/TKO", round: 2 },
@@ -47,11 +52,11 @@ const UFC_329_EVENT = {
       weight: "Lightweight",
       scheduled: "Saturday, 6:00 PM",
       scheduledRounds: 3,
-      defaultWager: 25,
+      defaultWager: 50,
       defaultSelectionId: "benoit-saint-denis",
       predictionDefaults: {
         "benoit-saint-denis": { method: "KO/TKO", round: 2 },
-        "paddy-pimblett": { method: "Decision", round: 3 },
+        "paddy-pimblett": { method: "Decision" },
       },
       entrants: [
         { id: "benoit-saint-denis", name: "Benoit Saint-Denis", record: "17-3-0, 1NC", odds: null },
@@ -65,11 +70,11 @@ const UFC_329_EVENT = {
       weight: "Bantamweight",
       scheduled: "Saturday, 6:00 PM",
       scheduledRounds: 3,
-      defaultWager: 25,
+      defaultWager: 50,
       defaultSelectionId: "mario-bautista",
       predictionDefaults: {
-        "cory-sandhagen": { method: "Decision", round: 3 },
-        "mario-bautista": { method: "Decision", round: 3 },
+        "cory-sandhagen": { method: "Decision" },
+        "mario-bautista": { method: "Decision" },
       },
       entrants: [
         { id: "cory-sandhagen", name: "Cory Sandhagen", record: "18-6-0", odds: null },
@@ -83,11 +88,11 @@ const UFC_329_EVENT = {
       weight: "Flyweight",
       scheduled: "Saturday, 6:00 PM",
       scheduledRounds: 3,
-      defaultWager: 25,
+      defaultWager: 50,
       defaultSelectionId: "loneer-kavanagh",
       predictionDefaults: {
-        "brandon-royval": { method: "Decision", round: 3 },
-        "loneer-kavanagh": { method: "Decision", round: 3 },
+        "brandon-royval": { method: "Decision" },
+        "loneer-kavanagh": { method: "Decision" },
       },
       entrants: [
         { id: "brandon-royval", name: "Brandon Royval", record: "17-9-0", odds: null },
@@ -101,7 +106,7 @@ const UFC_329_EVENT = {
       weight: "Lightweight",
       scheduled: "Saturday, 6:00 PM",
       scheduledRounds: 3,
-      defaultWager: 25,
+      defaultWager: 50,
       defaultSelectionId: "terrance-mckinney",
       predictionDefaults: {
         "king-green": { method: "KO/TKO", round: 1 },
@@ -114,10 +119,7 @@ const UFC_329_EVENT = {
     },
   ],
   propDefaults: {
-    fastestFinish: "F5",
     fightOfNight: "F4",
-    totalDecisions: 2,
-    totalFinishes: 3,
   },
   results: {
     F1: { complete: false, winnerId: "", method: "", round: null, time: "" },

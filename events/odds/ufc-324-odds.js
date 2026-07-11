@@ -10,6 +10,7 @@ window.RISKEM_ODDS_SNAPSHOTS = window.RISKEM_ODDS_SNAPSHOTS || {};
   AVG is computed from implied probability unless avg is set manually.
 */
 const UFC_329_ODDS_SNAPSHOT = {
+  id: "ufc-329-manual-2026-07-10",
   sourceLabel: "Manual market snapshot + AVG",
   pulledAt: "Manual snapshot · July 10, 2026",
   note: "Publicly listed moneylines were used as the baseline; FD/DK values are close two-book placeholders until the API pull is enabled.",
