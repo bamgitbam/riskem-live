@@ -22,6 +22,92 @@ function riskemCombatIsFinish(method) {
   return Boolean(method) && !riskemCombatIsDecision(method) && !riskemCombatIsNoContest(method);
 }
 
+function riskemCombatScheduledRounds(contest) {
+  return Math.max(1, Number(contest?.scheduledRounds || 3));
+}
+
+function riskemCombatNormalizePrediction(prediction, contest) {
+  const normalized = { ...prediction };
+  const method = normalized.method || "";
+  const maxRound = riskemCombatScheduledRounds(contest);
+
+  if (!method) {
+    return normalized;
+  }
+
+  if (riskemCombatIsDecision(method) || riskemCombatIsNoContest(method)) {
+    normalized.round = null;
+    return normalized;
+  }
+
+  if (riskemCombatIsFinish(method)) {
+    const round = Number(normalized.round);
+    normalized.round = Number.isFinite(round) ? Math.trunc(round) : null;
+
+    if (normalized.round !== null) {
+      if (normalized.round < 1) normalized.round = 1;
+      if (normalized.round > maxRound) normalized.round = maxRound;
+    }
+  }
+
+  return normalized;
+}
+
+function riskemCombatValidatePrediction(prediction, contest) {
+  const method = prediction?.method || "";
+  const maxRound = riskemCombatScheduledRounds(contest);
+
+  if (!method) {
+    throw new Error(`Pick a method for ${contest.label}.`);
+  }
+
+  if (riskemCombatIsDecision(method) || riskemCombatIsNoContest(method)) {
+    prediction.round = null;
+    return;
+  }
+
+  const round = Number(prediction?.round);
+  if (!Number.isInteger(round) || round < 1) {
+    throw new Error(`Pick a finish round for ${contest.label}.`);
+  }
+  if (round > maxRound) {
+    throw new Error(`${contest.label} is scheduled for ${maxRound} rounds. A finish cannot be after Round ${maxRound}.`);
+  }
+}
+
+function riskemCombatDeriveProps(event, pickReader) {
+  let totalDecisions = 0;
+  let totalFinishes = 0;
+  let earliestRound = Infinity;
+  let fastestFinish = "";
+
+  for (const contest of event.contests || []) {
+    const pick = pickReader(contest) || {};
+    const method = pick.method || "";
+    const round = Number(pick.round);
+    const maxRound = riskemCombatScheduledRounds(contest);
+
+    if (riskemCombatIsDecision(method)) {
+      totalDecisions += 1;
+      continue;
+    }
+
+    if (riskemCombatIsNoContest(method)) {
+      continue;
+    }
+
+    if (riskemCombatIsFinish(method)) {
+      totalFinishes += 1;
+      if (Number.isInteger(round) && round >= 1 && round <= maxRound && round < earliestRound) {
+        earliestRound = round;
+        fastestFinish = contest.id;
+      }
+    }
+  }
+
+  return { fastestFinish, totalDecisions, totalFinishes };
+}
+
 window.RISKEM_SPORTS.combat = {
   id: "combat",
   name: "Combat Sports",
@@ -39,49 +125,21 @@ window.RISKEM_SPORTS.combat = {
     { key: "totalDecisions", label: "Total decisions", type: "number", min: 0, defaultValue: 0, derived: true },
     { key: "totalFinishes", label: "Total finishes", type: "number", min: 0, defaultValue: 0, derived: true },
   ],
-  validatePrediction(prediction, contest) {
-    const method = prediction?.method || "";
-    const maxRound = Number(contest.scheduledRounds || 3);
-
-    if (riskemCombatIsDecision(method) || riskemCombatIsNoContest(method)) {
-      prediction.round = null;
-      return;
-    }
-
-    const round = Number(prediction?.round);
-    if (!Number.isFinite(round) || round < 1) {
-      throw new Error(`Pick a finish round for ${contest.label}.`);
-    }
-    if (round > maxRound) {
-      throw new Error(`${contest.label} is scheduled for ${maxRound} rounds. A finish cannot be after Round ${maxRound}.`);
-    }
-  },
+  normalizePrediction: riskemCombatNormalizePrediction,
+  validatePrediction: riskemCombatValidatePrediction,
   derivePropsFromForm(event) {
-    let totalDecisions = 0;
-    let totalFinishes = 0;
-    let earliestRound = Infinity;
-    let fastestFinish = "";
-
-    for (const contest of event.contests || []) {
+    return riskemCombatDeriveProps(event, (contest) => {
       const method = document.querySelector(`[data-prediction="method"][data-contest="${CSS.escape(contest.id)}"]`)?.value || "";
-      const roundRaw = document.querySelector(`[data-prediction="round"][data-contest="${CSS.escape(contest.id)}"]`)?.value || "";
-      const round = Number(roundRaw);
-
-      if (riskemCombatIsDecision(method)) {
-        totalDecisions += 1;
-        continue;
-      }
-
-      if (riskemCombatIsFinish(method)) {
-        totalFinishes += 1;
-        if (Number.isFinite(round) && round >= 1 && round < earliestRound) {
-          earliestRound = round;
-          fastestFinish = contest.id;
-        }
-      }
-    }
-
-    return { fastestFinish, totalDecisions, totalFinishes };
+      const roundNode = document.querySelector(`[data-prediction="round"][data-contest="${CSS.escape(contest.id)}"]`);
+      const roundRaw = roundNode?.disabled ? "" : (roundNode?.value || "");
+      return riskemCombatNormalizePrediction({ method, round: roundRaw === "" ? null : Number(roundRaw) }, contest);
+    });
+  },
+  derivePropsFromPicks(event, picks) {
+    return riskemCombatDeriveProps(event, (contest) => {
+      const prediction = picks?.[contest.id]?.prediction || {};
+      return riskemCombatNormalizePrediction(prediction, contest);
+    });
   },
   scoreBonus(pick, result) {
     if (!result.complete || pick.selectionId !== result.winnerId) return 0;
@@ -106,11 +164,15 @@ window.RISKEM_SPORTS.combat = {
   propsScore(player, event) {
     const finalProps = event.finalProps || {};
     if (!finalProps.complete) return 0;
+    const derived = player.derivedProps || {};
+    const props = player.props || {};
     let score = 0;
-    if (player.props?.fastestFinish && player.props.fastestFinish === finalProps.fastestFinish) score += 50;
-    if (player.props?.fightOfNight && player.props.fightOfNight === finalProps.fightOfNight) score += 50;
-    if (String(player.props?.totalDecisions ?? "") !== "" && Number(player.props.totalDecisions) === Number(finalProps.totalDecisions)) score += 50;
-    if (String(player.props?.totalFinishes ?? "") !== "" && Number(player.props.totalFinishes) === Number(finalProps.totalFinishes)) score += 50;
+
+    if ((derived.fastestFinish || props.fastestFinish) && (derived.fastestFinish || props.fastestFinish) === finalProps.fastestFinish) score += 50;
+    if (props.fightOfNight && props.fightOfNight === finalProps.fightOfNight) score += 50;
+    if (String(derived.totalDecisions ?? props.totalDecisions ?? "") !== "" && Number(derived.totalDecisions ?? props.totalDecisions) === Number(finalProps.totalDecisions)) score += 50;
+    if (String(derived.totalFinishes ?? props.totalFinishes ?? "") !== "" && Number(derived.totalFinishes ?? props.totalFinishes) === Number(finalProps.totalFinishes)) score += 50;
+
     return score;
   },
   formatPrediction(pick) {
@@ -129,12 +191,16 @@ window.RISKEM_SPORTS.combat = {
     return result?.complete && result.winnerId ? `Winner: ${entrantName(event, result.winnerId)}` : "Winner: —";
   },
   tiebreaker(player) {
-    const decisions = Number(player.props?.totalDecisions ?? 0);
-    const finishes = Number(player.props?.totalFinishes ?? 0);
+    const decisions = Number(player.derivedProps?.totalDecisions ?? player.props?.totalDecisions ?? 0);
+    const finishes = Number(player.derivedProps?.totalFinishes ?? player.props?.totalFinishes ?? 0);
     return `${decisions} decisions · ${finishes} finishes`;
   },
-  propSummary(props, event) {
-    return `Fastest finish: ${contestName(event, props?.fastestFinish) || "—"}<br><span class="fine">FOTN: ${contestName(event, props?.fightOfNight) || "—"} · Decisions ${props?.totalDecisions ?? "—"} · Finishes ${props?.totalFinishes ?? "—"}</span>`;
+  propSummary(props, event, player) {
+    const derived = player?.derivedProps || {};
+    const fastest = derived.fastestFinish ?? props?.fastestFinish;
+    const decisions = derived.totalDecisions ?? props?.totalDecisions ?? "—";
+    const finishes = derived.totalFinishes ?? props?.totalFinishes ?? "—";
+    return `Fastest finish: ${contestName(event, fastest) || "—"}<br><span class="fine">FOTN: ${contestName(event, props?.fightOfNight) || "—"} · Decisions ${decisions} · Finishes ${finishes}</span>`;
   },
   statusText(event) {
     const parts = (event.contests || []).map((contest) => {

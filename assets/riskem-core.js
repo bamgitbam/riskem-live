@@ -646,57 +646,143 @@
     const min = Number(rules.minTotalWager || 0);
     const max = Number(rules.maxTotalWager || rules.budget || 0);
     const ok = total >= min && total <= max;
-    if ($("wagerStatus")) $("wagerStatus").innerHTML = `Wagered<br>${money(total)} / ${money(max)}`;
-    if ($("wagerStatus")) $("wagerStatus").style.color = ok ? "#0f8f62" : "#b42318";
+    if ($("wagerStatus")) {
+      $("wagerStatus").innerHTML = `Wagered<br>${money(total)} / ${money(max)}`;
+      $("wagerStatus").style.color = ok ? "#0f8f62" : "#b42318";
+      $("wagerStatus").title = ok
+        ? "Wager total is valid."
+        : `Wager total must be between ${money(min)} and ${money(max)}.`;
+    }
+  }
+
+  function sanitizePredictionForBuild(prediction, contest, sport) {
+    const normalized = { ...prediction };
+
+    if (sport?.normalizePrediction) {
+      return sport.normalizePrediction(normalized, contest) || normalized;
+    }
+
+    if ("method" in normalized && "round" in normalized) {
+      const method = normalized.method || "";
+      if (isDecisionMethod(method) || isNoContestMethod(method)) {
+        normalized.round = null;
+      }
+    }
+
+    return normalized;
+  }
+
+  function readPredictionForContest(contest, sport) {
+    const prediction = {};
+    for (const field of sport.predictionFields || []) {
+      const node = document.querySelector(`[data-prediction="${CSS.escape(field.key)}"][data-contest="${CSS.escape(contest.id)}"]`);
+      const raw = node?.disabled ? "" : (node?.value ?? "");
+
+      if (field.key === "round") {
+        prediction[field.key] = raw === "" ? null : Number(raw);
+      } else {
+        prediction[field.key] = field.type === "number" ? (raw === "" ? null : Number(raw)) : raw;
+      }
+    }
+    return sanitizePredictionForBuild(prediction, contest, sport);
+  }
+
+  function derivedPropsFromBuiltPicks(event, sport, picks) {
+    if (sport?.derivePropsFromPicks) {
+      return sport.derivePropsFromPicks(event, picks) || {};
+    }
+    if (sport?.derivePropsFromForm) {
+      return sport.derivePropsFromForm(event) || {};
+    }
+    return {};
+  }
+
+  function validateWagers(player, event) {
+    const rules = resolvedRules(event);
+    const minPick = Number(rules.minWager || 0);
+    const maxPick = Number(rules.maxWager || Infinity);
+
+    for (const contest of event.contests || []) {
+      const pick = player.picks?.[contest.id];
+      const wager = Number(pick?.wager || 0);
+
+      if (!Number.isFinite(wager) || wager <= 0) {
+        throw new Error(`Missing wager for ${contest.label}.`);
+      }
+
+      if (minPick && wager < minPick) {
+        throw new Error(`${contest.label} wager is ${money(wager)}. Minimum per pick is ${money(minPick)}.`);
+      }
+
+      if (Number.isFinite(maxPick) && wager > maxPick) {
+        throw new Error(`${contest.label} wager is ${money(wager)}. Maximum per pick is ${money(maxPick)}.`);
+      }
+    }
+
+    const total = totalWagered(player, event);
+    const min = Number(rules.minTotalWager || 0);
+    const max = Number(rules.maxTotalWager || rules.budget || Infinity);
+
+    if (total < min) throw new Error(`Total wager is ${money(total)}. Minimum is ${money(min)}.`);
+    if (total > max) throw new Error(`Total wager is ${money(total)}. Maximum is ${money(max)}.`);
   }
 
   function buildSubmission(event, sport) {
     updateDerivedProps(event, sport);
+
     const name = ($("playerName")?.value || "").trim();
     if (!name) throw new Error("Enter player name.");
+
     const player = { name, submittedAt: new Date().toISOString(), picks: {}, props: {}, derivedProps: {} };
+
     for (const contest of event.contests || []) {
       const selectionId = document.querySelector(`[data-field="selectionId"][data-contest="${CSS.escape(contest.id)}"]`)?.value;
       const wager = Number(document.querySelector(`[data-field="wager"][data-contest="${CSS.escape(contest.id)}"]`)?.value || 0);
-      const oddsRaw = document.querySelector(`[data-field="odds"][data-contest="${CSS.escape(contest.id)}"]`)?.value;
       const selectedEntrant = (contest.entrants || []).find((entrant) => entrant.id === selectionId);
+
       const odds = selectedEntrant?.odds !== null && selectedEntrant?.odds !== undefined && selectedEntrant?.odds !== ""
         ? Number(selectedEntrant.odds)
-        : (oddsRaw === "" ? null : Number(oddsRaw));
+        : null;
+
       if (!selectionId) throw new Error(`Missing pick for ${contest.label}.`);
-      if (!wager) throw new Error(`Missing wager for ${contest.label}.`);
-      if (odds === null || !Number.isFinite(odds) || odds === 0) throw new Error(`Missing locked AVG odds for ${contest.label}. Update the event odds snapshot.`);
-      const prediction = {};
-      for (const field of sport.predictionFields || []) {
-        const node = document.querySelector(`[data-prediction="${CSS.escape(field.key)}"][data-contest="${CSS.escape(contest.id)}"]`);
-        const raw = node?.disabled ? "" : (node?.value ?? "");
-        prediction[field.key] = field.type === "number" ? (raw === "" ? null : Number(raw)) : raw;
+      if (!selectedEntrant) throw new Error(`Invalid pick for ${contest.label}.`);
+      if (odds === null || !Number.isFinite(odds) || odds === 0) {
+        throw new Error(`Missing locked AVG odds for ${contest.label}. Update the event odds snapshot.`);
       }
+
+      const prediction = readPredictionForContest(contest, sport);
       if (sport.validatePrediction) sport.validatePrediction(prediction, contest);
+
       player.picks[contest.id] = {
         selectionId,
         wager,
         odds,
-        oddsSource: selectedEntrant?.oddsSources ? "AVG" : "Manual",
+        oddsSource: "AVG",
         oddsSnapshotId: event.oddsSnapshot?.id || event.id,
         oddsSnapshotLabel: event.oddsSnapshot?.sourceLabel || "",
         oddsSources: selectedEntrant?.oddsSources || null,
         prediction,
       };
     }
+
+    validateWagers(player, event);
+
+    const derived = derivedPropsFromBuiltPicks(event, sport, player.picks);
+    player.derivedProps = { ...derived };
+
     for (const field of sport.propDefinitions || []) {
+      if (field.derived) {
+        const value = derived[field.key] ?? "";
+        player.props[field.key] = field.type === "number" ? Number(value || 0) : value;
+        continue;
+      }
+
       const node = document.querySelector(`[data-prop="${CSS.escape(field.key)}"]`);
       const raw = node?.value ?? "";
       const value = field.type === "number" ? Number(raw || 0) : raw;
       player.props[field.key] = value;
-      if (field.derived) player.derivedProps[field.key] = value;
     }
-    const total = totalWagered(player, event);
-    const rules = resolvedRules(event);
-    const min = Number(rules.minTotalWager || 0);
-    const max = Number(rules.maxTotalWager || rules.budget || Infinity);
-    if (total < min) throw new Error(`Total wager is ${money(total)}. Minimum is ${money(min)}.`);
-    if (total > max) throw new Error(`Total wager is ${money(total)}. Maximum is ${money(max)}.`);
+
     return player;
   }
 

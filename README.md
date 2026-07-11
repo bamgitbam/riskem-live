@@ -281,6 +281,30 @@ See:
 docs/NEW_REPO_SETUP.md
 ```
 
+
+## Dummy-proof submission validation
+
+The entry form now hardens submissions at build time:
+
+```text
+Decision / No Contest → round is stored as null
+Finish methods → legal finish round required
+Per-pick wager min/max enforced
+Total wager min/max enforced
+Derived props rebuilt from finalized picks
+```
+
+For UFC 329, the 5-fight card uses:
+
+```text
+Budget: $500
+Pick range: $25–$150
+Minimum total wager: $250
+Maximum total wager: $500
+```
+
+If the form shows a $400 maximum for UFC 329, clear cache or use a new cache-buster query.
+
 ## Existing F8WC safety
 
 Do not overwrite the existing live F8WC repo root unless you are ready to promote this version.
