@@ -584,3 +584,15 @@ body.show-event-switcher .event-switcher {
 #submitNotice {
   margin-top: 12px;
 }
+
+
+/* Clean ready scoreboard polish */
+.stat strong,
+.rank-total strong {
+  line-height: 1.1;
+}
+
+.rank-total strong {
+  display: block;
+  margin-bottom: 2px;
+}

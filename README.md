@@ -464,6 +464,18 @@ event_id + player_name
 
 This build also falls back to a plain insert so a no-stakes test can continue even before the unique index is installed.
 
+
+## Ready empty scoreboard
+
+The UFC test event is reset to:
+
+```js
+players: []
+entriesLocked: false
+```
+
+Clear Supabase rows for `event_id = 'ufc-329'`, then the public scoreboard should show 0 players until new live submissions arrive.
+
 ## Existing F8WC safety
 
 Do not overwrite the existing live F8WC repo root unless you are ready to promote this version.
