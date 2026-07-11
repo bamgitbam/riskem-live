@@ -168,7 +168,10 @@
       entry: player,
     };
 
-    const response = await fetch(`${liveBaseUrl()}?on_conflict=event_id,player_name`, {
+    // Preferred path: upsert by event + player name, which requires the unique
+    // index from supabase-riskem-entries.sql. If the index is not installed yet,
+    // fall back to a normal insert so the no-stakes live test can continue.
+    const upsertResponse = await fetch(`${liveBaseUrl()}?on_conflict=event_id,player_name`, {
       method: "POST",
       headers: {
         ...liveHeaders(),
@@ -177,12 +180,32 @@
       body: JSON.stringify(payload),
     });
 
-    if (!response.ok) {
-      const message = await response.text().catch(() => "");
-      throw new Error(`Submit failed (${response.status}). ${message || "Check Supabase table policies."}`.trim());
+    if (upsertResponse.ok) return upsertResponse.json();
+
+    const upsertText = await upsertResponse.text().catch(() => "");
+    const missingConflictIndex =
+      upsertResponse.status === 400 &&
+      (upsertText.includes("42P10") || upsertText.includes("ON CONFLICT"));
+
+    if (!missingConflictIndex) {
+      throw new Error(`Submit failed (${upsertResponse.status}). ${upsertText || "Check Supabase table policies."}`.trim());
     }
 
-    return response.json();
+    const insertResponse = await fetch(liveBaseUrl(), {
+      method: "POST",
+      headers: {
+        ...liveHeaders(),
+        Prefer: "return=representation",
+      },
+      body: JSON.stringify(payload),
+    });
+
+    if (!insertResponse.ok) {
+      const message = await insertResponse.text().catch(() => "");
+      throw new Error(`Submit failed (${insertResponse.status}). ${message || "Check Supabase table policies."}`.trim());
+    }
+
+    return insertResponse.json();
   }
 
   function justSubmittedMessage(event) {

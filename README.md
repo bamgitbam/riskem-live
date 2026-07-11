@@ -451,6 +451,19 @@ scoreboard.html?event=ufc-329&commissioner=1
 Only the Supabase publishable key is used in `assets/live-config.js`.
 Never place a secret key, service-role key, or database password in the repo.
 
+
+## Supabase ON CONFLICT note
+
+If submit fails with `42P10`, run `supabase-riskem-entries.sql` again in Supabase SQL Editor.
+
+This creates the required unique index:
+
+```text
+event_id + player_name
+```
+
+This build also falls back to a plain insert so a no-stakes test can continue even before the unique index is installed.
+
 ## Existing F8WC safety
 
 Do not overwrite the existing live F8WC repo root unless you are ready to promote this version.
