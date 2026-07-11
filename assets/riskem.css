@@ -524,3 +524,52 @@ input[readonly], select:disabled {
     text-align: center;
   }
 }
+
+
+/* Clean public user mode */
+.event-switcher {
+  display: none !important;
+}
+
+body.commissioner-mode .event-switcher,
+body.show-event-switcher .event-switcher {
+  display: flex !important;
+}
+
+.commissioner-only.hide {
+  display: none !important;
+}
+
+.advanced-entry-record {
+  margin-top: 12px;
+}
+
+.advanced-entry-record summary {
+  cursor: pointer;
+  color: var(--muted);
+  font-weight: 800;
+  font-size: 13px;
+}
+
+.submit-ready-panel .top-actions {
+  display: flex;
+  flex-wrap: wrap;
+}
+
+.submit-ready-panel .notice {
+  margin-top: 12px;
+}
+
+@media (max-width: 720px) {
+  .submit-ready-panel .top-actions {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .submit-ready-panel button,
+  .submit-ready-panel .mini-link {
+    width: 100%;
+    justify-content: center;
+    text-align: center;
+  }
+}

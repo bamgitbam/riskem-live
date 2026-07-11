@@ -79,6 +79,22 @@
     const params = new URLSearchParams(window.location.search);
     return params.get("event") || eventIds()[0] || "";
   }
+  function urlFlag(...names) {
+    const params = new URLSearchParams(window.location.search);
+    return names.some((name) => {
+      const value = params.get(name);
+      return value === "" || value === "1" || value === "true" || value === "yes";
+    });
+  }
+  function isCommissionerMode() {
+    return urlFlag("commissioner", "commish", "admin") || window.location.hash.toLowerCase().includes("commissioner");
+  }
+  function showEventSwitcher() {
+    return isCommissionerMode() || urlFlag("switcher", "events");
+  }
+  function showOddsBoard(event) {
+    return Boolean(event.showPublicOddsBoard) || isCommissionerMode() || urlFlag("odds");
+  }
   function getEvent() {
     const id = getEventId();
     return (window.RISKEM_EVENTS || {})[id];
@@ -161,9 +177,9 @@
   }
 
   function allPlayers(event) {
-    // Official event-file players win over local test imports.
-    // This prevents double-counting after entries are promoted to events/<event>.js
-    // but browser local imports have not been cleared yet.
+    // Public users see only published event-file entries.
+    // Commissioner mode adds local test imports for review/export.
+    if (!isCommissionerMode()) return officialPlayers(event);
     return dedupePlayers([...officialPlayers(event), ...loadLocalImports(event)]);
   }
   function totalWagered(player, event) {
@@ -243,6 +259,8 @@
     };
   }
   function renderShell(event, sport) {
+    document.body.classList.toggle("commissioner-mode", isCommissionerMode());
+    document.body.classList.toggle("show-event-switcher", showEventSwitcher());
     document.title = `${event.title} ${document.body.dataset.page === "submit" ? "Entry" : "Scoreboard"}`;
     if ($("heroKicker")) $("heroKicker").textContent = `${sport.name} · ${sport.contestNounPlural || "Contests"}`;
     if ($("heroTitle")) $("heroTitle").innerHTML = h(event.title).replace("Risk’em", `<span class="gold">Risk’em</span>`);
@@ -279,7 +297,7 @@
     const board = $("oddsBoard");
     if (!panel || !board) return;
 
-    if (!hasOddsBoard(event)) {
+    if (!hasOddsBoard(event) || !showOddsBoard(event)) {
       panel.classList.add("hide");
       board.innerHTML = "";
       return;
@@ -314,10 +332,11 @@
     const localCount = loadLocalImports(event).length;
 
     if ($("localImportNotice")) {
-      $("localImportNotice").classList.toggle("hide", localCount === 0);
+      const showLocalNotice = isCommissionerMode() && localCount > 0;
+      $("localImportNotice").classList.toggle("hide", !showLocalNotice);
       const officialCount = officialPlayers(event).length;
       const ignoredCount = ignoredLocalDuplicateNames(event).length;
-      if (!localCount) {
+      if (!showLocalNotice) {
         $("localImportNotice").textContent = "";
       } else if (officialCount && ignoredCount) {
         $("localImportNotice").textContent = `${localCount} local test import${localCount === 1 ? "" : "s"} saved on this device only. ${ignoredCount} already-published duplicate${ignoredCount === 1 ? "" : "s"} ignored. Clear local imports when finished testing.`;
@@ -358,8 +377,14 @@
 
     renderLocked(event, sport, players);
     renderDetail(event, sport, players);
-    renderCommissionerTools(event, sport, players);
-    setupImportTools(event, sport);
+
+    if ($("commissionerTools")) {
+      $("commissionerTools").classList.toggle("hide", !isCommissionerMode());
+    }
+    if (isCommissionerMode()) {
+      renderCommissionerTools(event, sport, players);
+      setupImportTools(event, sport);
+    }
   }
 
   function renderLocked(event, sport, players) {
@@ -731,39 +756,38 @@
     form.innerHTML = `
       <section class="panel">
         <div class="section-head"><div><h2>Your Entry</h2><div class="hint" id="rulesHint"></div></div></div>
-        <div class="form-grid two">
-          <label>Player name<input id="playerName" placeholder="Bam Bam" autocomplete="name" /></label>
-          <label>Submitted at<input id="submittedAt" readonly /></label>
+        <div class="form-grid">
+          <label>Your name<input id="playerName" placeholder="Bam Bam" autocomplete="name" /></label>
         </div>
       </section>
       <section class="panel">
-        <div class="section-head"><div><h2>${h(sport.contestNounPlural || "Contests")}</h2><div class="hint">Pick winners and wagers only. AVG odds, finish-round validity, and derived props update automatically.</div></div><div class="updated" id="wagerStatus"></div></div>
+        <div class="section-head"><div><h2>${h(sport.contestNounPlural || "Contests")}</h2><div class="hint">Pick a winner, choose a wager, and predict how each fight ends. Odds are already built in.</div></div><div class="updated" id="wagerStatus"></div></div>
         <div class="form-grid-stack" id="contestInputs"></div>
       </section>
       <section class="panel">
-        <div class="section-head"><div><h2>Props</h2><div class="hint">Props are scored only when final props are marked complete.</div></div></div>
+        <div class="section-head"><div><h2>Fight Props</h2><div class="hint">Pick Fight of the Night. The other props are calculated automatically from your fight picks.</div></div></div>
         <div class="form-grid" id="propInputs"></div>
       </section>
       <section class="panel submit-ready-panel">
         <div class="section-head">
           <div>
-            <h2>Submit Entry</h2>
-            <div class="hint">Validate first, then copy or download your entry and send it to the commissioner.</div>
+            <h2>Submit Your Picks</h2>
+            <div class="hint">Check your entry, then copy your picks and send them to the commissioner.</div>
           </div>
         </div>
         <div class="top-actions">
-          <button id="buildSubmission" type="button">Validate Entry</button>
-          <button id="copySubmission" type="button">Copy Entry JSON</button>
-          <button class="secondary" id="shareSubmission" type="button">Share / Copy Entry</button>
-          <button class="secondary" id="downloadSubmission" type="button">Download JSON</button>
-          <a class="mini-link" id="scoreboardInlineLink" href="./scoreboard.html">Open Scoreboard</a>
+          <button id="buildSubmission" type="button">Check My Entry</button>
+          <button id="copySubmission" type="button">Copy My Picks</button>
+          <a class="mini-link" id="scoreboardInlineLink" href="./scoreboard.html">View Scoreboard</a>
         </div>
         <div class="notice">
-          No entry is sent automatically. The JSON below is the official submission record. Copy it into a text/email/chat message for the commissioner.
+          This does not send automatically. After copying, paste the copied text in a message to the commissioner.
         </div>
-        <pre class="output-box" id="submissionOutput">Fill the entry and click Validate Entry.</pre>
+        <details class="advanced-entry-record">
+          <summary>Show copied entry text</summary>
+          <pre class="output-box" id="submissionOutput">Fill the entry and click Check My Entry.</pre>
+        </details>
       </section>`;
-    $("submittedAt").value = new Date().toISOString();
     renderShell(event, sport);
     renderContestInputs(event, sport);
     renderPropInputs(event, sport);
@@ -776,7 +800,7 @@
       try {
         const payload = submissionText(event, sport);
         setSubmissionOutput(payload);
-        alert("Entry is valid. Copy or download it and send it to the commissioner.");
+        alert("Looks good. Now click Copy My Picks and send the copied text to the commissioner.");
       } catch (err) { alert(err.message); }
     };
 
@@ -785,39 +809,7 @@
         const payload = submissionText(event, sport);
         setSubmissionOutput(payload);
         await copySubmissionPayload(payload);
-        alert("Entry JSON copied. Send it to the commissioner.");
-      } catch (err) { alert(err.message); }
-    };
-
-    if ($("shareSubmission")) {
-      $("shareSubmission").onclick = async () => {
-        try {
-          const payload = submissionText(event, sport);
-          setSubmissionOutput(payload);
-          const title = `${event.title || "Risk’em Live"} entry — ${$("playerName")?.value || "Player"}`;
-          if (navigator.share) {
-            await navigator.share({ title, text: payload });
-          } else {
-            await copySubmissionPayload(payload);
-            alert("Sharing is not available here, so the entry JSON was copied instead.");
-          }
-        } catch (err) {
-          if (err?.name !== "AbortError") alert(err.message);
-        }
-      };
-    }
-
-    $("downloadSubmission").onclick = () => {
-      try {
-        const payload = submissionText(event, sport);
-        setSubmissionOutput(payload);
-        const blob = new Blob([payload], { type: "application/json" });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = `${event.id}-${playerSlug()}.json`;
-        a.click();
-        URL.revokeObjectURL(url);
+        alert("Copied. Paste the copied text in a message to the commissioner.");
       } catch (err) { alert(err.message); }
     };
   }
@@ -915,8 +907,7 @@
       const defaultSelectionId = contestDefaultSelection(contest);
       const defaultWager = contest.defaultWager ?? rules.minWager ?? 25;
       const entrantOptions = (contest.entrants || []).map((entrant) => {
-        const sourceText = oddsLabel(entrant.oddsSources);
-        const priceText = sourceText ? ` AVG ${fmtOdds(entrant.odds)}` : (entrant.odds ? ` ${fmtOdds(entrant.odds)}` : "");
+        const priceText = entrant.odds ? ` · ${fmtOdds(entrant.odds)}` : "";
         const selected = entrant.id === defaultSelectionId ? "selected" : "";
         return `<option value="${h(entrant.id)}" data-odds="${h(entrant.odds ?? "")}" ${selected}>${h(entrant.name)}${entrant.record ? ` (${h(entrant.record)})` : ""}${priceText}</option>`;
       }).join("");
@@ -926,7 +917,6 @@
         <div class="form-grid" style="margin-top:12px">
           <label>${h(sport.pickLabel || "Pick")}<select data-field="selectionId" data-contest="${h(contest.id)}">${entrantOptions}</select></label>
           <label>Wager<input data-field="wager" data-contest="${h(contest.id)}" type="number" min="${h(rules.minWager || 0)}" max="${h(rules.maxWager || 9999)}" step="1" value="${h(defaultWager)}" /></label>
-          <label>Locked AVG odds<input data-field="odds" data-contest="${h(contest.id)}" type="text" readonly aria-readonly="true" tabindex="-1" placeholder="auto AVG" /></label>
           ${renderPredictionInputs(event, sport, contest)}
         </div>
       </div>`;
@@ -982,9 +972,10 @@
     if (!box) return;
     const propDefaults = event.propDefaults || {};
     box.innerHTML = (sport.propDefinitions || []).map((field) => {
+      const derived = Boolean(field.derived);
+      if (derived && !isCommissionerMode()) return "";
       const base = `data-prop="${h(field.key)}"`;
       const defaultValue = propDefaults[field.key] ?? field.defaultValue ?? "";
-      const derived = Boolean(field.derived);
       if (field.type === "contest") {
         return `<label>${h(field.label)}<select ${base} ${derived ? "disabled" : ""}><option value="">—</option>${(event.contests || []).map((c) => `<option value="${h(c.id)}" ${c.id === defaultValue ? "selected" : ""}>${h(c.label)} · ${h((c.entrants || []).map((e) => e.name).join(" vs "))}</option>`).join("")}</select></label>`;
       }

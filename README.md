@@ -390,6 +390,31 @@ Open Scoreboard
 
 The app does not send entries to a server. The copied JSON is the submission record.
 
+
+## Clean user mode
+
+For public users, send the normal entry link:
+
+```text
+index.html?event=ufc-329
+```
+
+Public users see only the simplified entry flow:
+
+```text
+Check My Entry
+Copy My Picks
+View Scoreboard
+```
+
+Commissioner tools are hidden from normal links.
+
+Use commissioner mode only for testing/import/export:
+
+```text
+scoreboard.html?event=ufc-329&commissioner=1
+```
+
 ## Existing F8WC safety
 
 Do not overwrite the existing live F8WC repo root unless you are ready to promote this version.
