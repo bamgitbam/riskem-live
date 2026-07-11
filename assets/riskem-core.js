@@ -314,7 +314,7 @@
               return `<td><span class="pill">${h(entrantName(event, pick.selectionId))}</span><br>${h(sport.formatPrediction ? sport.formatPrediction(pick, contest, event) : "")}
                 <br><span class="fine">${money(pick.wager)} at ${fmtOdds(lockedOdds(contest, pick))}${pick.oddsSource ? ` · ${h(pick.oddsSource)}` : ""}</span></td>`;
             }).join("")}
-            <td>${sport.propSummary ? sport.propSummary(player.props || {}, event) : "—"}</td>
+            <td>${sport.propSummary ? sport.propSummary(player.props || {}, event, player) : "—"}</td>
             <td>${h(sport.tiebreaker ? sport.tiebreaker(player, event) : "—")}</td>
           </tr>`).join("")}</tbody>`;
     }
@@ -329,7 +329,7 @@
               return `<div class="pick-item"><div class="pick-item-top"><span>${h(contest.label)}</span><span>${money(pick.wager)} @ ${fmtOdds(lockedOdds(contest, pick))}${pick.oddsSource ? ` · ${h(pick.oddsSource)}` : ""}</span></div><div class="pick-main">${h(entrantName(event, pick.selectionId))}</div><div class="pick-sub">${h(sport.formatPrediction ? sport.formatPrediction(pick, contest, event) : "")}</div></div>`;
             }).join("")}
           </div>
-          <div class="props-line"><strong>Props:</strong> ${sport.propSummary ? sport.propSummary(player.props || {}, event) : "—"}</div>
+          <div class="props-line"><strong>Props:</strong> ${sport.propSummary ? sport.propSummary(player.props || {}, event, player) : "—"}</div>
         </article>`).join("");
     }
   }
@@ -365,17 +365,105 @@
     }
   }
 
+
+  function sanitizeImportedPrediction(prediction, contest, sport) {
+    const copy = { ...(prediction || {}) };
+
+    // For imports, validate before any clamping so pasted bad JSON is rejected.
+    // Decision/No Contest may intentionally clear round inside sport.validatePrediction().
+    if (sport?.validatePrediction) sport.validatePrediction(copy, contest);
+
+    if (sport?.normalizePrediction) {
+      return sport.normalizePrediction(copy, contest) || copy;
+    }
+
+    return sanitizePredictionForBuild(copy, contest, sport);
+  }
+
+  function normalizeImportedPlayer(player, event, sport, importIndex = 0) {
+    if (!player || typeof player !== "object") {
+      throw new Error(`Import ${importIndex + 1} is not a player object.`);
+    }
+
+    const name = String(player.name || "").trim();
+    if (!name) throw new Error(`Import ${importIndex + 1} is missing player name.`);
+
+    const normalized = {
+      name,
+      submittedAt: player.submittedAt || new Date().toISOString(),
+      picks: {},
+      props: {},
+      derivedProps: {},
+    };
+
+    for (const contest of event.contests || []) {
+      const pick = player.picks?.[contest.id];
+      if (!pick) throw new Error(`${name}: missing pick for ${contest.label}.`);
+
+      const selectionId = pick.selectionId;
+      const entrant = (contest.entrants || []).find((item) => item.id === selectionId);
+      if (!entrant) throw new Error(`${name}: invalid pick for ${contest.label}.`);
+
+      const odds = pick.odds !== null && pick.odds !== undefined && pick.odds !== ""
+        ? Number(pick.odds)
+        : Number(entrant.odds);
+
+      if (!Number.isFinite(odds) || odds === 0) {
+        throw new Error(`${name}: missing locked AVG odds for ${contest.label}.`);
+      }
+
+      const wager = Number(pick.wager || 0);
+      const prediction = sanitizeImportedPrediction(pick.prediction || {}, contest, sport);
+
+      normalized.picks[contest.id] = {
+        selectionId,
+        wager,
+        odds,
+        oddsSource: "AVG",
+        oddsSnapshotId: pick.oddsSnapshotId || event.oddsSnapshot?.id || event.id,
+        oddsSnapshotLabel: pick.oddsSnapshotLabel || event.oddsSnapshot?.sourceLabel || "",
+        oddsSources: pick.oddsSources || entrant.oddsSources || null,
+        prediction,
+      };
+    }
+
+    validateWagers(normalized, event);
+
+    const derived = derivedPropsFromBuiltPicks(event, sport, normalized.picks);
+    normalized.derivedProps = { ...derived };
+
+    for (const field of sport.propDefinitions || []) {
+      if (field.derived) {
+        const value = derived[field.key] ?? "";
+        normalized.props[field.key] = field.type === "number" ? Number(value || 0) : value;
+        continue;
+      }
+
+      const raw = player.props?.[field.key] ?? "";
+      normalized.props[field.key] = field.type === "number" ? Number(raw || 0) : raw;
+    }
+
+    return normalized;
+  }
+
+  function normalizeImportedPlayers(input, event, sport) {
+    const incoming = Array.isArray(input) ? input : [input];
+    return incoming.map((player, index) => normalizeImportedPlayer(player, event, sport, index));
+  }
+
+
   function setupImportTools(event, sport) {
     if ($("saveLocalImport")) {
       $("saveLocalImport").onclick = () => {
         const raw = $("localImportInput")?.value || "";
         try {
           const parsed = JSON.parse(raw);
-          const incoming = Array.isArray(parsed) ? parsed : [parsed];
+          const incoming = normalizeImportedPlayers(parsed, event, sport);
           const existing = loadLocalImports(event);
           saveLocalImports(event, [...existing, ...incoming]);
           renderScoreboard(event, sport);
           if ($("localImportInput")) $("localImportInput").value = "";
+          alert(`${incoming.length} validated local test import${incoming.length === 1 ? "" : "s"} added.`);
         } catch (err) {
           alert(`Import failed: ${err.message}`);
         }

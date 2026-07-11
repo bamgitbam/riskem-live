@@ -305,6 +305,23 @@ Maximum total wager: $500
 
 If the form shows a $400 maximum for UFC 329, clear cache or use a new cache-buster query.
 
+
+## Local test import guard
+
+The scoreboard import box validates pasted JSON before saving it to local browser storage.
+
+Invalid imports are rejected for:
+
+```text
+wager over per-pick maximum
+total wager over event maximum
+finish round beyond scheduled rounds
+missing locked AVG odds
+invalid fighter/team/entrant ids
+```
+
+If old bad entries still show, click **Clear Local Imports** on the scoreboard and re-import clean submissions.
+
 ## Existing F8WC safety
 
 Do not overwrite the existing live F8WC repo root unless you are ready to promote this version.
