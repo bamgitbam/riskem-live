@@ -315,7 +315,15 @@
 
     if ($("localImportNotice")) {
       $("localImportNotice").classList.toggle("hide", localCount === 0);
-      $("localImportNotice").textContent = localCount ? `${localCount} local test import${localCount === 1 ? "" : "s"} active on this device only. Add them to events/${event.id}.js for the public scoreboard.` : "";
+      const officialCount = officialPlayers(event).length;
+      const ignoredCount = ignoredLocalDuplicateNames(event).length;
+      if (!localCount) {
+        $("localImportNotice").textContent = "";
+      } else if (officialCount && ignoredCount) {
+        $("localImportNotice").textContent = `${localCount} local test import${localCount === 1 ? "" : "s"} saved on this device only. ${ignoredCount} already-published duplicate${ignoredCount === 1 ? "" : "s"} ignored. Clear local imports when finished testing.`;
+      } else {
+        $("localImportNotice").textContent = `${localCount} local test import${localCount === 1 ? "" : "s"} saved on this device only. Add them to events/${event.id}.js for the public scoreboard.`;
+      }
     }
 
     if ($("standings")) {
@@ -673,6 +681,38 @@
     }
   }
 
+
+  function submissionText(event, sport) {
+    return JSON.stringify(buildSubmission(event, sport), null, 2);
+  }
+
+  function playerSlug() {
+    return normalizeText($("playerName")?.value || "submission").replaceAll(" ", "-") || "submission";
+  }
+
+  function setSubmissionOutput(payload) {
+    const box = $("submissionOutput");
+    if (box) box.textContent = payload;
+  }
+
+  async function copySubmissionPayload(payload) {
+    if (navigator.clipboard?.writeText) {
+      await navigator.clipboard.writeText(payload);
+      return true;
+    }
+    const node = document.createElement("textarea");
+    node.value = payload;
+    node.setAttribute("readonly", "");
+    node.style.position = "fixed";
+    node.style.left = "-9999px";
+    document.body.appendChild(node);
+    node.select();
+    const ok = document.execCommand("copy");
+    document.body.removeChild(node);
+    return ok;
+  }
+
+
   function renderSubmit(event, sport) {
     const form = $("entryForm");
     if (!form) return;
@@ -704,10 +744,24 @@
         <div class="section-head"><div><h2>Props</h2><div class="hint">Props are scored only when final props are marked complete.</div></div></div>
         <div class="form-grid" id="propInputs"></div>
       </section>
-      <section class="panel">
-        <div class="top-actions"><button id="buildSubmission" type="button">Build Submission</button><button class="secondary" id="copySubmission" type="button">Copy JSON</button><button class="secondary" id="downloadSubmission" type="button">Download JSON</button></div>
-        <div class="hint">Commissioner can paste this into the scoreboard local import for testing, or into the event file for public lock.</div>
-        <pre class="output-box" id="submissionOutput">Fill the entry and click Build Submission.</pre>
+      <section class="panel submit-ready-panel">
+        <div class="section-head">
+          <div>
+            <h2>Submit Entry</h2>
+            <div class="hint">Validate first, then copy or download your entry and send it to the commissioner.</div>
+          </div>
+        </div>
+        <div class="top-actions">
+          <button id="buildSubmission" type="button">Validate Entry</button>
+          <button id="copySubmission" type="button">Copy Entry JSON</button>
+          <button class="secondary" id="shareSubmission" type="button">Share / Copy Entry</button>
+          <button class="secondary" id="downloadSubmission" type="button">Download JSON</button>
+          <a class="mini-link" id="scoreboardInlineLink" href="./scoreboard.html">Open Scoreboard</a>
+        </div>
+        <div class="notice">
+          No entry is sent automatically. The JSON below is the official submission record. Copy it into a text/email/chat message for the commissioner.
+        </div>
+        <pre class="output-box" id="submissionOutput">Fill the entry and click Validate Entry.</pre>
       </section>`;
     $("submittedAt").value = new Date().toISOString();
     renderShell(event, sport);
@@ -716,26 +770,52 @@
     updateWagerStatus(event);
     form.addEventListener("input", () => { updateWagerStatus(event); updateDerivedProps(event, sport); });
     form.addEventListener("change", () => { updateWagerStatus(event); updateDerivedProps(event, sport); });
+    setHrefWithEvent("scoreboardInlineLink", "scoreboard.html", event);
+
     $("buildSubmission").onclick = () => {
-      try { $("submissionOutput").textContent = JSON.stringify(buildSubmission(event, sport), null, 2); }
-      catch (err) { alert(err.message); }
-    };
-    $("copySubmission").onclick = async () => {
       try {
-        const payload = JSON.stringify(buildSubmission(event, sport), null, 2);
-        $("submissionOutput").textContent = payload;
-        await navigator.clipboard.writeText(payload);
+        const payload = submissionText(event, sport);
+        setSubmissionOutput(payload);
+        alert("Entry is valid. Copy or download it and send it to the commissioner.");
       } catch (err) { alert(err.message); }
     };
+
+    $("copySubmission").onclick = async () => {
+      try {
+        const payload = submissionText(event, sport);
+        setSubmissionOutput(payload);
+        await copySubmissionPayload(payload);
+        alert("Entry JSON copied. Send it to the commissioner.");
+      } catch (err) { alert(err.message); }
+    };
+
+    if ($("shareSubmission")) {
+      $("shareSubmission").onclick = async () => {
+        try {
+          const payload = submissionText(event, sport);
+          setSubmissionOutput(payload);
+          const title = `${event.title || "Risk’em Live"} entry — ${$("playerName")?.value || "Player"}`;
+          if (navigator.share) {
+            await navigator.share({ title, text: payload });
+          } else {
+            await copySubmissionPayload(payload);
+            alert("Sharing is not available here, so the entry JSON was copied instead.");
+          }
+        } catch (err) {
+          if (err?.name !== "AbortError") alert(err.message);
+        }
+      };
+    }
+
     $("downloadSubmission").onclick = () => {
       try {
-        const payload = JSON.stringify(buildSubmission(event, sport), null, 2);
-        const slug = normalizeText($("playerName").value || "submission").replaceAll(" ", "-") || "submission";
+        const payload = submissionText(event, sport);
+        setSubmissionOutput(payload);
         const blob = new Blob([payload], { type: "application/json" });
         const url = URL.createObjectURL(blob);
         const a = document.createElement("a");
         a.href = url;
-        a.download = `${event.id}-${slug}.json`;
+        a.download = `${event.id}-${playerSlug()}.json`;
         a.click();
         URL.revokeObjectURL(url);
       } catch (err) { alert(err.message); }

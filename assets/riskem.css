@@ -490,3 +490,37 @@ input[readonly], select:disabled {
   color: #415168;
   cursor: not-allowed;
 }
+
+
+/* User-ready submit controls */
+.submit-ready-panel .notice {
+  margin: 12px 0;
+}
+
+.submit-ready-panel .top-actions {
+  align-items: stretch;
+}
+
+.submit-ready-panel button,
+.submit-ready-panel .mini-link {
+  min-height: 42px;
+}
+
+.output-box {
+  max-height: 520px;
+  overflow: auto;
+}
+
+@media (max-width: 720px) {
+  .submit-ready-panel .top-actions {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .submit-ready-panel button,
+  .submit-ready-panel .mini-link {
+    width: 100%;
+    justify-content: center;
+    text-align: center;
+  }
+}

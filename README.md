@@ -363,6 +363,33 @@ Duplicate submittedAt warnings
 
 When `entriesLocked: true`, the entry page closes and shows an Entries Locked notice.
 
+
+## Fun test / user-ready flow
+
+For a 4–6 user test:
+
+```text
+1. Send users the entry page URL.
+2. Each user fills the form.
+3. User clicks Validate Entry.
+4. User clicks Copy Entry JSON or Share / Copy Entry.
+5. Commissioner pastes the JSON into the scoreboard Local Test Import.
+6. Commissioner reviews Locked Picks and Standings.
+7. Commissioner copies Public Players Block into the event file when ready to lock.
+```
+
+Entry-page buttons:
+
+```text
+Validate Entry
+Copy Entry JSON
+Share / Copy Entry
+Download JSON
+Open Scoreboard
+```
+
+The app does not send entries to a server. The copied JSON is the submission record.
+
 ## Existing F8WC safety
 
 Do not overwrite the existing live F8WC repo root unless you are ready to promote this version.
