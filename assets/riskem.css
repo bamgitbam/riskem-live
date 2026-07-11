@@ -573,3 +573,14 @@ body.show-event-switcher .event-switcher {
     text-align: center;
   }
 }
+
+
+/* Live submit mode */
+#submitLiveEntry[disabled] {
+  opacity: 0.7;
+  cursor: wait;
+}
+
+#submitNotice {
+  margin-top: 12px;
+}

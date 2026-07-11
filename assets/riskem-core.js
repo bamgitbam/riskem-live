@@ -95,6 +95,118 @@
   function showOddsBoard(event) {
     return Boolean(event.showPublicOddsBoard) || isCommissionerMode() || urlFlag("odds");
   }
+
+  function liveBackendConfig() {
+    return window.RISKEM_LIVE_BACKEND || {};
+  }
+
+  function liveEntriesEnabled(event) {
+    const cfg = liveBackendConfig();
+    return Boolean(event && cfg.enabled && cfg.provider === "supabase" && cfg.url && cfg.publishableKey && cfg.table);
+  }
+
+  function liveCache() {
+    window.RISKEM_LIVE_ENTRY_CACHE = window.RISKEM_LIVE_ENTRY_CACHE || {};
+    return window.RISKEM_LIVE_ENTRY_CACHE;
+  }
+
+  function liveRows(event) {
+    return Array.isArray(liveCache()[event.id]) ? liveCache()[event.id] : [];
+  }
+
+  function livePlayers(event) {
+    return liveRows(event)
+      .map((row) => {
+        const entry = row?.entry || {};
+        if (!entry || typeof entry !== "object") return null;
+        return {
+          ...entry,
+          name: entry.name || row.player_name || "Unnamed",
+          submittedAt: entry.submittedAt || row.submitted_at || row.created_at || new Date().toISOString(),
+          liveEntryId: row.id || null,
+        };
+      })
+      .filter(Boolean);
+  }
+
+  function liveHeaders() {
+    const cfg = liveBackendConfig();
+    return {
+      apikey: cfg.publishableKey,
+      Authorization: `Bearer ${cfg.publishableKey}`,
+      "Content-Type": "application/json",
+    };
+  }
+
+  function liveBaseUrl() {
+    const cfg = liveBackendConfig();
+    return `${String(cfg.url || "").replace(/\/+$/, "")}/rest/v1/${encodeURIComponent(cfg.table)}`;
+  }
+
+  async function fetchLiveEntries(event) {
+    if (!liveEntriesEnabled(event)) return [];
+    const url = `${liveBaseUrl()}?event_id=eq.${encodeURIComponent(event.id)}&select=id,event_id,player_name,submitted_at,created_at,entry&order=created_at.asc`;
+    const response = await fetch(url, { headers: liveHeaders() });
+    if (!response.ok) {
+      const message = await response.text().catch(() => "");
+      throw new Error(`Could not load live entries (${response.status}). ${message}`.trim());
+    }
+    const rows = await response.json();
+    liveCache()[event.id] = Array.isArray(rows) ? rows : [];
+    return liveRows(event);
+  }
+
+  async function submitLiveEntry(event, player) {
+    if (!liveEntriesEnabled(event)) {
+      throw new Error("Live submit is not enabled yet.");
+    }
+
+    const payload = {
+      event_id: event.id,
+      player_name: player.name,
+      submitted_at: player.submittedAt || new Date().toISOString(),
+      entry: player,
+    };
+
+    const response = await fetch(`${liveBaseUrl()}?on_conflict=event_id,player_name`, {
+      method: "POST",
+      headers: {
+        ...liveHeaders(),
+        Prefer: "resolution=merge-duplicates,return=representation",
+      },
+      body: JSON.stringify(payload),
+    });
+
+    if (!response.ok) {
+      const message = await response.text().catch(() => "");
+      throw new Error(`Submit failed (${response.status}). ${message || "Check Supabase table policies."}`.trim());
+    }
+
+    return response.json();
+  }
+
+  function justSubmittedMessage(event) {
+    const key = `riskem-just-submitted:${event.id}`;
+    try {
+      const raw = sessionStorage.getItem(key);
+      if (!raw) return "";
+      sessionStorage.removeItem(key);
+      const data = JSON.parse(raw);
+      return data?.name ? `${data.name}, your picks were submitted.` : "Your picks were submitted.";
+    } catch (_) {
+      return "";
+    }
+  }
+
+  function markJustSubmitted(event, player) {
+    try {
+      sessionStorage.setItem(`riskem-just-submitted:${event.id}`, JSON.stringify({
+        name: player.name,
+        at: new Date().toISOString(),
+      }));
+    } catch (_) {}
+  }
+
   function getEvent() {
     const id = getEventId();
     return (window.RISKEM_EVENTS || {})[id];
@@ -177,10 +289,12 @@
   }
 
   function allPlayers(event) {
-    // Public users see only published event-file entries.
-    // Commissioner mode adds local test imports for review/export.
-    if (!isCommissionerMode()) return officialPlayers(event);
-    return dedupePlayers([...officialPlayers(event), ...loadLocalImports(event)]);
+    const publishedAndLive = dedupePlayers([...officialPlayers(event), ...livePlayers(event)]);
+
+    // Public users see published event-file entries and live submitted entries.
+    // Commissioner mode also adds local test imports for manual review/export.
+    if (!isCommissionerMode()) return publishedAndLive;
+    return dedupePlayers([...publishedAndLive, ...loadLocalImports(event)]);
   }
   function totalWagered(player, event) {
     return (event.contests || []).reduce((sum, contest) => sum + Number(player.picks?.[contest.id]?.wager || 0), 0);
@@ -357,6 +471,22 @@
         </div>`).join("") : `<div class="fine">No players entered yet.</div>`;
     }
     if ($("updatedText")) $("updatedText").innerHTML = `Status<br>${sport.statusText ? sport.statusText(event) : "Ready"}`;
+    if ($("liveEntryNotice")) {
+      const submitted = justSubmittedMessage(event);
+      const count = livePlayers(event).length;
+      const liveOn = liveEntriesEnabled(event);
+      $("liveEntryNotice").classList.toggle("hide", !liveOn && !submitted);
+      if (submitted) {
+        $("liveEntryNotice").textContent = submitted;
+      } else if (liveOn && count) {
+        $("liveEntryNotice").textContent = `${count} live submitted entr${count === 1 ? "y" : "ies"} loaded.`;
+      } else if (liveOn) {
+        $("liveEntryNotice").textContent = "Live submissions are open.";
+      } else {
+        $("liveEntryNotice").textContent = "";
+      }
+    }
+
     if ($("playerCount")) $("playerCount").textContent = players.length;
     if ($("contestCount")) $("contestCount").textContent = `${completed} / ${(event.contests || []).length}`;
     if ($("leaderName")) $("leaderName").textContent = leaderLabel(ranked, completed);
@@ -777,14 +907,14 @@
         </div>
         <div class="top-actions">
           <button id="buildSubmission" type="button">Check My Entry</button>
-          <button id="copySubmission" type="button">Copy My Picks</button>
+          <button id="submitLiveEntry" type="button">Submit Your Picks</button>
           <a class="mini-link" id="scoreboardInlineLink" href="./scoreboard.html">View Scoreboard</a>
         </div>
-        <div class="notice">
-          This does not send automatically. After copying, paste the copied text in a message to the commissioner.
+        <div class="notice" id="submitNotice">
+          This is a live no-stakes test. Submit Your Picks sends your entry straight to the scoreboard.
         </div>
         <details class="advanced-entry-record">
-          <summary>Show copied entry text</summary>
+          <summary>Show entry receipt</summary>
           <pre class="output-box" id="submissionOutput">Fill the entry and click Check My Entry.</pre>
         </details>
       </section>`;
@@ -800,17 +930,29 @@
       try {
         const payload = submissionText(event, sport);
         setSubmissionOutput(payload);
-        alert("Looks good. Now click Copy My Picks and send the copied text to the commissioner.");
+        alert("Looks good. Now click Submit Your Picks.");
       } catch (err) { alert(err.message); }
     };
 
-    $("copySubmission").onclick = async () => {
+    $("submitLiveEntry").onclick = async () => {
+      const button = $("submitLiveEntry");
       try {
-        const payload = submissionText(event, sport);
-        setSubmissionOutput(payload);
-        await copySubmissionPayload(payload);
-        alert("Copied. Paste the copied text in a message to the commissioner.");
-      } catch (err) { alert(err.message); }
+        const player = buildSubmission(event, sport);
+        setSubmissionOutput(JSON.stringify(player, null, 2));
+        if (button) {
+          button.disabled = true;
+          button.textContent = "Submitting...";
+        }
+        await submitLiveEntry(event, player);
+        markJustSubmitted(event, player);
+        window.location.href = `./scoreboard.html?event=${encodeURIComponent(event.id)}&submitted=1`;
+      } catch (err) {
+        alert(err.message);
+        if (button) {
+          button.disabled = false;
+          button.textContent = "Submit Your Picks";
+        }
+      }
     };
   }
 
@@ -1164,6 +1306,18 @@
     }
     renderShell(event, sport);
     if (document.body.dataset.page === "submit") renderSubmit(event, sport);
-    if (document.body.dataset.page === "scoreboard") renderScoreboard(event, sport);
+    if (document.body.dataset.page === "scoreboard") {
+      renderScoreboard(event, sport);
+      if (liveEntriesEnabled(event)) {
+        fetchLiveEntries(event)
+          .then(() => renderScoreboard(event, sport))
+          .catch((err) => {
+            if ($("liveEntryNotice")) {
+              $("liveEntryNotice").classList.remove("hide");
+              $("liveEntryNotice").textContent = `Live entries could not load: ${err.message}`;
+            }
+          });
+      }
+    }
   });
 })();

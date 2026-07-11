@@ -415,6 +415,42 @@ Use commissioner mode only for testing/import/export:
 scoreboard.html?event=ufc-329&commissioner=1
 ```
 
+
+## Supabase direct-submit test mode
+
+This build supports direct public submissions through Supabase.
+
+User flow:
+
+```text
+Check My Entry
+Submit Your Picks
+Scoreboard opens
+```
+
+Before testing, run:
+
+```text
+supabase-riskem-entries.sql
+```
+
+in the Supabase SQL Editor.
+
+Public URL:
+
+```text
+index.html?event=ufc-329
+```
+
+Commissioner URL:
+
+```text
+scoreboard.html?event=ufc-329&commissioner=1
+```
+
+Only the Supabase publishable key is used in `assets/live-config.js`.
+Never place a secret key, service-role key, or database password in the repo.
+
 ## Existing F8WC safety
 
 Do not overwrite the existing live F8WC repo root unless you are ready to promote this version.
