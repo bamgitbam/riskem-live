@@ -18,6 +18,11 @@ No backend is required for the public app.
 ## Current ready events
 
 ```text
+index.html?event=ufc-329
+scoreboard.html?event=ufc-329
+
+Legacy test link also works:
+
 index.html?event=ufc-324
 scoreboard.html?event=ufc-324
 
@@ -267,4 +272,8 @@ Safe testing options:
 New repo: riskem-live
 Existing repo sandbox: /v2/
 ```
-# riskem-live
+
+
+## UFC 329 autofill update
+
+The UFC card now includes default wagers, AVG locked odds, recommended method/round defaults by selected fighter, and default fight props. The old `event=ufc-324` URL remains available as a compatibility alias, but `event=ufc-329` is the cleaner public URL.

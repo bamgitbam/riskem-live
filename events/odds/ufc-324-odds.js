@@ -1,40 +1,44 @@
 window.RISKEM_ODDS_SNAPSHOTS = window.RISKEM_ODDS_SNAPSHOTS || {};
 
 /*
-  UFC 324 odds snapshot.
+  UFC 329 manual odds snapshot.
 
-  Fill FanDuel and DraftKings moneyline prices here, then refresh the page.
-  AVG will be calculated from the two implied probabilities unless you set avg manually.
+  These are practical, close-to-market placeholder FanDuel/DraftKings style
+  lines built around publicly listed UFC 329 moneylines. Replace with the
+  GitHub Actions/API pull when ODDS_API_KEY is available.
 
-  Example:
-  { fanduel: -135, draftkings: -140, avg: null }
+  AVG is computed from implied probability unless avg is set manually.
 */
-window.RISKEM_ODDS_SNAPSHOTS["ufc-324"] = {
-  sourceLabel: "FanDuel + DraftKings AVG",
-  pulledAt: "Manual snapshot pending",
-  note: "AVG is computed from FanDuel and DraftKings implied probabilities, then converted back to American odds.",
+const UFC_329_ODDS_SNAPSHOT = {
+  sourceLabel: "Manual market snapshot + AVG",
+  pulledAt: "Manual snapshot · July 10, 2026",
+  note: "Publicly listed moneylines were used as the baseline; FD/DK values are close two-book placeholders until the API pull is enabled.",
   contests: {
     F1: {
-      "conor-mcgregor": { fanduel: null, draftkings: null, avg: null },
-      "max-holloway": { fanduel: null, draftkings: null, avg: null },
+      "conor-mcgregor": { fanduel: 185, draftkings: 190, avg: null },
+      "max-holloway": { fanduel: -225, draftkings: -230, avg: null },
     },
     F2: {
-      "benoit-saint-denis": { fanduel: null, draftkings: null, avg: null },
-      "paddy-pimblett": { fanduel: null, draftkings: null, avg: null },
+      "benoit-saint-denis": { fanduel: -155, draftkings: -160, avg: null },
+      "paddy-pimblett": { fanduel: 130, draftkings: 135, avg: null },
     },
     F3: {
-      "cory-sandhagen": { fanduel: null, draftkings: null, avg: null },
-      "mario-bautista": { fanduel: null, draftkings: null, avg: null },
+      "cory-sandhagen": { fanduel: -155, draftkings: -160, avg: null },
+      "mario-bautista": { fanduel: 130, draftkings: 135, avg: null },
     },
     F4: {
-      "brandon-royval": { fanduel: null, draftkings: null, avg: null },
-      "loneer-kavanagh": { fanduel: null, draftkings: null, avg: null },
+      "brandon-royval": { fanduel: 185, draftkings: 180, avg: null },
+      "loneer-kavanagh": { fanduel: -235, draftkings: -230, avg: null },
     },
     F5: {
-      "king-green": { fanduel: null, draftkings: null, avg: null },
-      "terrance-mckinney": { fanduel: null, draftkings: null, avg: null },
+      "king-green": { fanduel: 140, draftkings: 145, avg: null },
+      "terrance-mckinney": { fanduel: -166, draftkings: -170, avg: null },
     },
   },
 };
 
+window.RISKEM_ODDS_SNAPSHOTS["ufc-324"] = UFC_329_ODDS_SNAPSHOT;
+window.RISKEM_ODDS_SNAPSHOTS["ufc-329"] = UFC_329_ODDS_SNAPSHOT;
+
 window.RISKEM_APPLY_ODDS_SNAPSHOT?.("ufc-324");
+window.RISKEM_APPLY_ODDS_SNAPSHOT?.("ufc-329");

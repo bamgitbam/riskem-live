@@ -425,21 +425,75 @@
     };
   }
 
+
+  function contestDefaultSelection(contest) {
+    return contest.defaultSelectionId || contest.entrants?.[0]?.id || "";
+  }
+
+  function predictionDefaultValue(contest, selectionId, field) {
+    const selectedDefaults = contest.predictionDefaults?.[selectionId] || {};
+    const commonDefaults = contest.predictionDefaults?.default || {};
+
+    if (selectedDefaults[field.key] !== undefined) return selectedDefaults[field.key];
+    if (commonDefaults[field.key] !== undefined) return commonDefaults[field.key];
+
+    const methodDefault = selectedDefaults.method ?? commonDefaults.method ?? field.defaultValue;
+    if (field.key === "round" && normalizeText(methodDefault) === "decision") {
+      return contest.scheduledRounds || field.defaultValue || 3;
+    }
+
+    return field.defaultValue ?? "";
+  }
+
+  function applyPredictionDefaults(sport, contest, selectionId, force = true) {
+    for (const field of sport.predictionFields || []) {
+      const node = document.querySelector(`[data-prediction="${CSS.escape(field.key)}"][data-contest="${CSS.escape(contest.id)}"]`);
+      if (!node) continue;
+
+      const value = predictionDefaultValue(contest, selectionId, field);
+      if (force || node.value === "") node.value = value;
+    }
+  }
+
+  function bindMethodRoundAutomation(sport, contest) {
+    const methodNode = document.querySelector(`[data-prediction="method"][data-contest="${CSS.escape(contest.id)}"]`);
+    const roundNode = document.querySelector(`[data-prediction="round"][data-contest="${CSS.escape(contest.id)}"]`);
+    const pickNode = document.querySelector(`[data-field="selectionId"][data-contest="${CSS.escape(contest.id)}"]`);
+    if (!methodNode || !roundNode) return;
+
+    methodNode.addEventListener("change", () => {
+      const selectedId = pickNode?.value || contestDefaultSelection(contest);
+      const selectedDefaults = contest.predictionDefaults?.[selectedId] || {};
+
+      if (normalizeText(methodNode.value) === "decision") {
+        roundNode.value = contest.scheduledRounds || 3;
+        return;
+      }
+
+      if (selectedDefaults.method && normalizeText(selectedDefaults.method) === normalizeText(methodNode.value)) {
+        roundNode.value = selectedDefaults.round ?? roundNode.value;
+      }
+    });
+  }
+
   function renderContestInputs(event, sport) {
     const box = $("contestInputs");
     if (!box) return;
     box.innerHTML = (event.contests || []).map((contest) => {
+      const defaultSelectionId = contestDefaultSelection(contest);
+      const defaultWager = contest.defaultWager ?? event.rules?.minWager ?? 25;
       const entrantOptions = (contest.entrants || []).map((entrant) => {
         const sourceText = oddsLabel(entrant.oddsSources);
         const priceText = sourceText ? ` AVG ${fmtOdds(entrant.odds)}` : (entrant.odds ? ` ${fmtOdds(entrant.odds)}` : "");
-        return `<option value="${h(entrant.id)}" data-odds="${h(entrant.odds ?? "")}">${h(entrant.name)}${entrant.record ? ` (${h(entrant.record)})` : ""}${priceText}</option>`;
+        const selected = entrant.id === defaultSelectionId ? "selected" : "";
+        return `<option value="${h(entrant.id)}" data-odds="${h(entrant.odds ?? "")}" ${selected}>${h(entrant.name)}${entrant.record ? ` (${h(entrant.record)})` : ""}${priceText}</option>`;
       }).join("");
       return `<div class="contest-form-card" data-contest-id="${h(contest.id)}">
         <div class="contest-title">${h(contest.label)} · ${h((contest.entrants || []).map((e) => e.name).join(" vs "))}</div>
         <div class="match-meta">${h([contest.weight, contest.scheduled].filter(Boolean).join(" · "))}</div>
         <div class="form-grid" style="margin-top:12px">
           <label>${h(sport.pickLabel || "Pick")}<select data-field="selectionId" data-contest="${h(contest.id)}">${entrantOptions}</select></label>
-          <label>Wager<input data-field="wager" data-contest="${h(contest.id)}" type="number" min="${h(event.rules?.minWager || 0)}" max="${h(event.rules?.maxWager || 9999)}" step="1" value="${h(event.rules?.minWager || 25)}" /></label>
+          <label>Wager<input data-field="wager" data-contest="${h(contest.id)}" type="number" min="${h(event.rules?.minWager || 0)}" max="${h(event.rules?.maxWager || 9999)}" step="1" value="${h(defaultWager)}" /></label>
           <label>Locked odds / AVG<input data-field="odds" data-contest="${h(contest.id)}" type="number" step="1" placeholder="auto AVG or manual" /></label>
           ${renderPredictionInputs(event, sport, contest)}
         </div>
@@ -449,41 +503,52 @@
     (event.contests || []).forEach((contest) => {
       const select = document.querySelector(`[data-field="selectionId"][data-contest="${CSS.escape(contest.id)}"]`);
       const odds = document.querySelector(`[data-field="odds"][data-contest="${CSS.escape(contest.id)}"]`);
-      const sync = () => {
+      const syncOdds = (force = false) => {
         const opt = select?.selectedOptions?.[0];
         const value = opt?.dataset?.odds || "";
-        if (odds && !odds.value) odds.value = value;
+        if (odds && (force || !odds.value)) odds.value = value;
       };
-      select?.addEventListener("change", () => { if (odds) odds.value = select.selectedOptions[0]?.dataset?.odds || ""; });
-      sync();
+
+      select?.addEventListener("change", () => {
+        syncOdds(true);
+        applyPredictionDefaults(sport, contest, select.value, true);
+      });
+
+      syncOdds(false);
+      applyPredictionDefaults(sport, contest, select?.value || contestDefaultSelection(contest), false);
+      bindMethodRoundAutomation(sport, contest);
     });
   }
 
   function renderPredictionInputs(event, sport, contest) {
+    const defaultSelectionId = contestDefaultSelection(contest);
     return (sport.predictionFields || []).map((field) => {
       const base = `data-prediction="${h(field.key)}" data-contest="${h(contest.id)}"`;
+      const defaultValue = predictionDefaultValue(contest, defaultSelectionId, field);
       if (field.type === "select") {
-        return `<label>${h(field.label)}<select ${base}>${(field.options || []).map((o) => `<option value="${h(o)}" ${o === field.defaultValue ? "selected" : ""}>${h(o)}</option>`).join("")}</select></label>`;
+        return `<label>${h(field.label)}<select ${base}>${(field.options || []).map((o) => `<option value="${h(o)}" ${o === defaultValue ? "selected" : ""}>${h(o)}</option>`).join("")}</select></label>`;
       }
       if (field.type === "entrant") {
-        return `<label>${h(field.label)}<select ${base}><option value="">—</option>${(contest.entrants || []).map((e) => `<option value="${h(e.id)}">${h(e.name)}</option>`).join("")}</select></label>`;
+        return `<label>${h(field.label)}<select ${base}><option value="">—</option>${(contest.entrants || []).map((e) => `<option value="${h(e.id)}" ${e.id === defaultValue ? "selected" : ""}>${h(e.name)}</option>`).join("")}</select></label>`;
       }
-      return `<label>${h(field.label)}<input ${base} type="${h(field.type || "text")}" ${field.min !== undefined ? `min="${h(field.min)}"` : ""} value="${h(field.defaultValue ?? "")}" /></label>`;
+      return `<label>${h(field.label)}<input ${base} type="${h(field.type || "text")}" ${field.min !== undefined ? `min="${h(field.min)}"` : ""} value="${h(defaultValue)}" /></label>`;
     }).join("");
   }
 
   function renderPropInputs(event, sport) {
     const box = $("propInputs");
     if (!box) return;
+    const propDefaults = event.propDefaults || {};
     box.innerHTML = (sport.propDefinitions || []).map((field) => {
       const base = `data-prop="${h(field.key)}"`;
+      const defaultValue = propDefaults[field.key] ?? field.defaultValue ?? "";
       if (field.type === "contest") {
-        return `<label>${h(field.label)}<select ${base}><option value="">—</option>${(event.contests || []).map((c) => `<option value="${h(c.id)}">${h(c.label)} · ${h((c.entrants || []).map((e) => e.name).join(" vs "))}</option>`).join("")}</select></label>`;
+        return `<label>${h(field.label)}<select ${base}><option value="">—</option>${(event.contests || []).map((c) => `<option value="${h(c.id)}" ${c.id === defaultValue ? "selected" : ""}>${h(c.label)} · ${h((c.entrants || []).map((e) => e.name).join(" vs "))}</option>`).join("")}</select></label>`;
       }
       if (field.type === "select") {
-        return `<label>${h(field.label)}<select ${base}>${(field.options || []).map((o) => `<option value="${h(o)}">${h(o)}</option>`).join("")}</select></label>`;
+        return `<label>${h(field.label)}<select ${base}>${(field.options || []).map((o) => `<option value="${h(o)}" ${o === defaultValue ? "selected" : ""}>${h(o)}</option>`).join("")}</select></label>`;
       }
-      return `<label>${h(field.label)}<input ${base} type="${h(field.type || "text")}" ${field.min !== undefined ? `min="${h(field.min)}"` : ""} value="${h(field.defaultValue ?? "")}" placeholder="${h(field.placeholder || "")}" /></label>`;
+      return `<label>${h(field.label)}<input ${base} type="${h(field.type || "text")}" ${field.min !== undefined ? `min="${h(field.min)}"` : ""} value="${h(defaultValue)}" placeholder="${h(field.placeholder || "")}" /></label>`;
     }).join("");
   }
 
@@ -522,7 +587,7 @@
         selectionId,
         wager,
         odds,
-        oddsSource: selectedEntrant?.oddsSources ? "FanDuel/DraftKings AVG" : "Manual",
+        oddsSource: selectedEntrant?.oddsSources ? (event.oddsSnapshot?.sourceLabel || "AVG") : "Manual",
         oddsSources: selectedEntrant?.oddsSources || null,
         prediction,
       };
