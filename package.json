@@ -1,0 +1,10 @@
+{
+  "name": "riskem-live",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "pull:ufc324": "node tools/pull-odds.mjs ufc-324 mma_mixed_martial_arts",
+    "check:tools": "node --check tools/pull-odds.mjs"
+  }
+}

@@ -1,0 +1,42 @@
+name: Update Odds Snapshot
+
+on:
+  workflow_dispatch:
+    inputs:
+      event_id:
+        description: "Risk’em event id"
+        required: true
+        default: "ufc-324"
+      sport_key:
+        description: "Odds provider sport key"
+        required: true
+        default: "mma_mixed_martial_arts"
+
+permissions:
+  contents: write
+
+jobs:
+  update-odds:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Pull odds snapshot
+        env:
+          ODDS_API_KEY: ${{ secrets.ODDS_API_KEY }}
+        run: node tools/pull-odds.mjs "${{ github.event.inputs.event_id }}" "${{ github.event.inputs.sport_key }}"
+
+      - name: Commit odds snapshot
+        run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+          git add events/odds/
+          git commit -m "Update odds snapshot" || echo "No odds changes"
+          git push

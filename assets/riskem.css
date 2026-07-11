@@ -1,0 +1,486 @@
+:root {
+  --navy: #061b33;
+  --navy2: #0b2e53;
+  --gold: #f4bd49;
+  --gold2: #ff9f1c;
+  --paper: #f7f9fc;
+  --card: #ffffff;
+  --line: #d8e2ee;
+  --text: #061b33;
+  --muted: #5c6c80;
+  --green: #0f8f62;
+  --red: #b42318;
+  --shadow: 0 18px 45px rgba(0, 0, 0, 0.14);
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: linear-gradient(135deg, #f4efe4 0%, #eef6fb 38%, #f7f9fc 100%);
+  font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+  color: var(--text);
+}
+
+.wrap {
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 22px 16px 40px;
+}
+
+.hero {
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(135deg, var(--navy), #063d66 66%, #05243e);
+  color: white;
+  border-radius: 28px;
+  padding: 30px 28px 24px;
+  box-shadow: var(--shadow);
+}
+
+.hero:after {
+  content: "";
+  position: absolute;
+  right: 24px;
+  bottom: -28px;
+  width: 130px;
+  height: 130px;
+  opacity: 0.08;
+  background: center/contain no-repeat url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><circle cx='32' cy='18' r='12' fill='%23f4bd49'/><path d='M24 34h16v6H24z' fill='%23333'/><path d='M20 42h24v6H20z' rx='2' fill='%23444'/></svg>");
+}
+
+.kicker {
+  display: inline-flex;
+  color: #ffe6a8;
+  font-weight: 1000;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  font-size: 13px;
+  margin-bottom: 14px;
+  position: relative;
+  z-index: 1;
+}
+
+h1 {
+  margin: 0;
+  font-size: clamp(34px, 7vw, 64px);
+  line-height: 0.95;
+  font-weight: 1000;
+  letter-spacing: -0.05em;
+  text-transform: uppercase;
+  position: relative;
+  z-index: 1;
+}
+
+.gold { color: var(--gold); }
+
+.sub {
+  margin: 12px 0 0;
+  max-width: 780px;
+  font-size: clamp(15px, 2.3vw, 20px);
+  line-height: 1.35;
+  color: #f5fbff;
+  font-weight: 750;
+  position: relative;
+  z-index: 1;
+}
+
+.top-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 18px;
+  position: relative;
+  z-index: 1;
+}
+
+.mini-link, button, .buttonish {
+  color: #061b33;
+  background: #fff4c7;
+  border: 1px solid rgba(6, 27, 51, 0.1);
+  border-radius: 999px;
+  text-decoration: none;
+  padding: 10px 14px;
+  font-weight: 1000;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.mini-link.secondary, button.secondary, .buttonish.secondary {
+  background: #fff;
+  color: var(--navy);
+  border-color: var(--line);
+}
+
+.panel {
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid var(--line);
+  border-radius: 24px;
+  box-shadow: 0 12px 30px rgba(6, 27, 51, 0.08);
+  padding: 18px;
+  margin-top: 18px;
+}
+
+.section-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+  align-items: flex-end;
+  margin: 0 0 14px;
+}
+
+h2 {
+  margin: 0;
+  font-size: 28px;
+  line-height: 1;
+  font-weight: 1000;
+  letter-spacing: -0.03em;
+}
+
+.hint, .fine {
+  color: var(--muted);
+  font-size: 13.25px;
+  font-weight: 650;
+  line-height: 1.4;
+}
+
+.hint { margin-top: 8px; max-width: 760px; }
+.fine { font-size: 12px; }
+
+.updated {
+  color: #415168;
+  font-weight: 900;
+  font-size: 13px;
+  text-align: right;
+  line-height: 1.35;
+}
+
+.cards {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 14px;
+}
+
+.stat, .match, .rank-card, .locked-card, .detail-card, .contest-form-card {
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  padding: 16px;
+  box-shadow: 0 8px 20px rgba(6, 27, 51, 0.06);
+}
+
+.stat small {
+  display: block;
+  color: #5c6c80;
+  font-weight: 850;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-size: 11px;
+}
+
+.stat strong {
+  display: block;
+  margin-top: 5px;
+  font-size: 28px;
+  line-height: 1;
+  letter-spacing: -0.04em;
+}
+
+.rankings, .contest-list, .mobile-list, .pick-list, .score-list, .form-grid-stack {
+  display: grid;
+  gap: 12px;
+}
+
+.rank-card {
+  display: grid;
+  grid-template-columns: 48px minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: center;
+}
+
+.rank {
+  width: 42px;
+  height: 42px;
+  border-radius: 14px;
+  background: var(--navy);
+  color: var(--gold);
+  display: grid;
+  place-items: center;
+  font-weight: 1000;
+  font-size: 18px;
+}
+
+.player-name, .mobile-card-name, .match-title, .contest-title {
+  font-weight: 1000;
+  font-size: 18px;
+  letter-spacing: -0.02em;
+}
+
+.player-sub, .match-meta, .pick-sub, .score-sub {
+  color: var(--muted);
+  font-weight: 700;
+  font-size: 13px;
+  line-height: 1.35;
+  margin-top: 3px;
+}
+
+.score {
+  text-align: right;
+  font-size: 28px;
+  font-weight: 1000;
+  letter-spacing: -0.04em;
+}
+
+.score span, .mobile-card-total span {
+  display: block;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.match-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.result {
+  margin-top: 8px;
+  font-size: 18px;
+  font-weight: 1000;
+  letter-spacing: -0.02em;
+}
+
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  border-radius: 999px;
+  padding: 5px 9px;
+  background: #edf3fb;
+  color: #24415f;
+  font-weight: 1000;
+  font-size: 12px;
+  line-height: 1;
+}
+
+.pill.win { color: #087443; background: #dff8ec; }
+.pill.loss { color: #9a1f17; background: #ffe6e2; }
+.pill.pending { color: #665000; background: #fff4c7; }
+
+.table-wrap {
+  overflow-x: auto;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 760px;
+  background: #fff;
+}
+
+th, td {
+  padding: 12px 12px;
+  border-bottom: 1px solid var(--line);
+  text-align: left;
+  vertical-align: top;
+}
+
+th {
+  background: #f2f6fb;
+  color: #415168;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-size: 11px;
+  font-weight: 1000;
+}
+
+tr:last-child td { border-bottom: none; }
+
+.mobile-list { display: none; }
+
+.mobile-card-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: flex-start;
+  margin-bottom: 12px;
+}
+
+.mobile-card-total {
+  text-align: right;
+  font-weight: 1000;
+  font-size: 22px;
+}
+
+.pick-item, .score-item, .form-row-inline {
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 11px;
+  background: #fbfdff;
+}
+
+.pick-item-top, .score-item-top {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  color: var(--muted);
+  font-weight: 950;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.pick-main {
+  margin-top: 4px;
+  font-size: 17px;
+  font-weight: 1000;
+}
+
+.summary-row {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.summary-mini {
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 10px;
+  background: #fff;
+}
+
+.summary-mini small {
+  display: block;
+  color: var(--muted);
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-size: 10px;
+}
+
+.summary-mini strong { display: block; margin-top: 3px; font-size: 18px; }
+
+input, select, textarea {
+  width: 100%;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 11px 12px;
+  font: inherit;
+  color: var(--text);
+  background: #fff;
+  font-weight: 700;
+}
+
+textarea { min-height: 130px; resize: vertical; }
+
+label {
+  display: grid;
+  gap: 6px;
+  color: #415168;
+  font-weight: 950;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.form-grid.two { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.form-grid.three { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+
+.output-box {
+  background: #061b33;
+  color: #f8fbff;
+  border-radius: 18px;
+  padding: 14px;
+  overflow-x: auto;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 12px;
+  line-height: 1.45;
+  white-space: pre-wrap;
+}
+
+.notice {
+  border: 1px solid #f7d98b;
+  background: #fff7da;
+  color: #4d3b00;
+  border-radius: 18px;
+  padding: 12px 14px;
+  font-weight: 750;
+}
+
+.hide { display: none !important; }
+
+@media (max-width: 860px) {
+  .wrap { padding: 14px 10px 28px; }
+  .hero { border-radius: 22px; padding: 24px 18px 20px; }
+  .panel { border-radius: 20px; padding: 14px; margin-top: 12px; }
+  .section-head { align-items: flex-start; flex-direction: column; gap: 6px; }
+  .updated { text-align: left; }
+  h2 { font-size: 24px; }
+  .cards { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+  .stat { padding: 12px; border-radius: 15px; }
+  .stat strong { font-size: 22px; }
+  .match-grid { grid-template-columns: 1fr; gap: 8px; }
+  .rank-card { grid-template-columns: 38px minmax(0, 1fr); }
+  .rank { width: 34px; height: 34px; border-radius: 11px; }
+  .score { grid-column: 2; text-align: left; font-size: 24px; }
+  .desktop-table { display: none; }
+  .mobile-list { display: grid; }
+  .form-grid, .form-grid.two, .form-grid.three { grid-template-columns: 1fr; }
+  .top-actions { gap: 7px; }
+  .mini-link, button, .buttonish { padding: 9px 11px; font-size: 13px; }
+}
+
+.odds-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.odds-card {
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  padding: 13px 14px;
+  background: #f8fbff;
+}
+
+.odds-card-title {
+  font-weight: 950;
+  color: var(--navy);
+  margin-bottom: 8px;
+}
+
+.odds-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+  border-top: 1px solid rgba(21, 42, 70, 0.08);
+  padding-top: 8px;
+  margin-top: 8px;
+  font-size: 13px;
+}
+
+.odds-row span {
+  color: #415168;
+  font-weight: 850;
+  text-align: right;
+}
+
+@media (max-width: 860px) {
+  .odds-grid { grid-template-columns: 1fr; gap: 8px; }
+  .odds-card { border-radius: 15px; padding: 11px 12px; }
+  .odds-row { grid-template-columns: 1fr; gap: 3px; }
+  .odds-row span { text-align: left; }
+}

@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="robots" content="noindex,nofollow" />
+    <title>Risk’em Live Scoreboard</title>
+    <link rel="stylesheet" href="./assets/riskem.css" />
+  </head>
+  <body data-page="scoreboard">
+    <div class="wrap">
+      <header class="hero">
+        <div class="kicker" id="heroKicker">Risk’em Live</div>
+        <h1 id="heroTitle">Risk’em Live</h1>
+        <p class="sub" id="heroSub"></p>
+        <div class="top-actions">
+          <a class="mini-link" id="submitLink" href="./index.html">Submit Entry</a>
+          <label style="display:flex;align-items:center;gap:8px;text-transform:none;letter-spacing:0;font-size:14px;color:#fff;font-weight:900;">
+            Event
+            <select id="eventSelect" style="min-width:190px;border-radius:999px;padding:9px 12px"></select>
+          </label>
+        </div>
+      </header>
+
+      <div class="notice" id="publicNote" style="margin-top:14px"></div>
+      <div class="notice hide" id="localImportNotice" style="margin-top:14px"></div>
+
+      <section class="panel hide" id="oddsPanel">
+        <div class="section-head"><div><h2>Odds Board</h2><div class="hint" id="oddsHint">FanDuel / DraftKings / AVG lines.</div></div></div>
+        <div class="odds-grid" id="oddsBoard"></div>
+      </section>
+
+      <section class="panel">
+        <div class="section-head">
+          <div>
+            <h2>Standings</h2>
+            <div class="hint" id="rulesHint"></div>
+          </div>
+          <div class="updated" id="updatedText"></div>
+        </div>
+        <div class="rankings" id="standings"></div>
+      </section>
+
+      <section class="panel">
+        <div class="cards">
+          <div class="stat"><small>Players</small><strong id="playerCount">0</strong></div>
+          <div class="stat"><small>Complete</small><strong id="contestCount">0 / 0</strong></div>
+          <div class="stat"><small>Leader</small><strong id="leaderName">—</strong></div>
+          <div class="stat"><small>Props</small><strong id="propsStatus">Open</strong></div>
+        </div>
+      </section>
+
+      <section class="panel">
+        <div class="section-head"><div><h2>Results</h2><div class="hint">Final results only. Locked odds vary by entry and appear in Scoring Detail and Locked Picks.</div></div></div>
+        <div class="match-grid" id="resultsGrid"></div>
+      </section>
+
+      <section class="panel">
+        <div class="section-head"><div><h2>Scoring Detail</h2><div class="hint">Shows contest profit/loss, prediction bonus, props, and final total.</div></div></div>
+        <div class="table-wrap desktop-table"><table id="detailTable"></table></div>
+        <div class="mobile-list" id="detailCards"></div>
+      </section>
+
+      <section class="panel" id="locked">
+        <div class="section-head"><div><h2>Locked Picks</h2><div class="hint">Official public record after the deadline. Player-specific odds are preserved.</div></div></div>
+        <div class="table-wrap desktop-table"><table id="lockedTable"></table></div>
+        <div class="mobile-list" id="lockedCards"></div>
+      </section>
+
+      <section class="panel">
+        <div class="section-head"><div><h2>Commissioner Local Test Import</h2><div class="hint">Paste one submission JSON or an array of submissions. This only saves to your browser for testing. To publish, copy the JSON into the event file.</div></div></div>
+        <textarea id="localImportInput" placeholder='Paste submission JSON here'></textarea>
+        <div class="top-actions">
+          <button type="button" id="saveLocalImport">Add Local Test Entries</button>
+          <button type="button" class="secondary" id="clearLocalImports">Clear Local Test Entries</button>
+          <button type="button" class="secondary" id="copyOfficialPlayers">Copy Current Players JSON</button>
+        </div>
+      </section>
+    </div>
+
+    <script src="./sports/soccer.js"></script>
+    <script src="./sports/combat.js"></script>
+    <script src="./sports/football.js"></script>
+    <script src="./sports/racing.js"></script>
+    <script src="./assets/odds-tools.js"></script>
+    <script src="./events/f8wc-quarterfinals.js"></script>
+    <script src="./events/ufc-324.js"></script>
+    <script src="./events/odds/ufc-324-odds.js"></script>
+    <script src="./events/nfl-week-template.js"></script>
+    <script src="./events/boxing-card-template.js"></script>
+    <script src="./events/racing-template.js"></script>
+    <script src="./assets/riskem-core.js"></script>
+  </body>
+</html>
