@@ -136,7 +136,212 @@ const UFC_329_EVENT = {
     totalDecisions: null,
     totalFinishes: null,
   },
-  players: [],
+  players: [
+  {
+    "name": "Bam Bam 1",
+    "submittedAt": "2026-07-11T06:25:59.070Z",
+    "picks": {
+      "F1": {
+        "selectionId": "max-holloway",
+        "wager": 100,
+        "odds": -227,
+        "oddsSource": "AVG",
+        "oddsSnapshotId": "ufc-329",
+        "oddsSnapshotLabel": "Manual market snapshot + AVG",
+        "oddsSources": {
+          "fanduel": -225,
+          "draftkings": -230,
+          "avg": -227
+        },
+        "prediction": {
+          "method": "KO/TKO",
+          "round": 4
+        }
+      },
+      "F2": {
+        "selectionId": "benoit-saint-denis",
+        "wager": 50,
+        "odds": -157,
+        "oddsSource": "AVG",
+        "oddsSnapshotId": "ufc-329",
+        "oddsSnapshotLabel": "Manual market snapshot + AVG",
+        "oddsSources": {
+          "fanduel": -155,
+          "draftkings": -160,
+          "avg": -157
+        },
+        "prediction": {
+          "method": "KO/TKO",
+          "round": 2
+        }
+      },
+      "F3": {
+        "selectionId": "mario-bautista",
+        "wager": 50,
+        "odds": 132,
+        "oddsSource": "AVG",
+        "oddsSnapshotId": "ufc-329",
+        "oddsSnapshotLabel": "Manual market snapshot + AVG",
+        "oddsSources": {
+          "fanduel": 130,
+          "draftkings": 135,
+          "avg": 132
+        },
+        "prediction": {
+          "method": "Decision",
+          "round": null
+        }
+      },
+      "F4": {
+        "selectionId": "loneer-kavanagh",
+        "wager": 50,
+        "odds": -232,
+        "oddsSource": "AVG",
+        "oddsSnapshotId": "ufc-329",
+        "oddsSnapshotLabel": "Manual market snapshot + AVG",
+        "oddsSources": {
+          "fanduel": -235,
+          "draftkings": -230,
+          "avg": -232
+        },
+        "prediction": {
+          "method": "Decision",
+          "round": null
+        }
+      },
+      "F5": {
+        "selectionId": "terrance-mckinney",
+        "wager": 50,
+        "odds": -168,
+        "oddsSource": "AVG",
+        "oddsSnapshotId": "ufc-329",
+        "oddsSnapshotLabel": "Manual market snapshot + AVG",
+        "oddsSources": {
+          "fanduel": -166,
+          "draftkings": -170,
+          "avg": -168
+        },
+        "prediction": {
+          "method": "Submission",
+          "round": 1
+        }
+      }
+    },
+    "props": {
+      "fastestFinish": "F5",
+      "fightOfNight": "F4",
+      "totalDecisions": 2,
+      "totalFinishes": 3
+    },
+    "derivedProps": {
+      "fastestFinish": "F5",
+      "totalDecisions": 2,
+      "totalFinishes": 3
+    }
+  },
+  {
+    "name": "Bam Bam 2",
+    "submittedAt": "2026-07-11T06:26:30.774Z",
+    "picks": {
+      "F1": {
+        "selectionId": "max-holloway",
+        "wager": 50,
+        "odds": -227,
+        "oddsSource": "AVG",
+        "oddsSnapshotId": "ufc-329",
+        "oddsSnapshotLabel": "Manual market snapshot + AVG",
+        "oddsSources": {
+          "fanduel": -225,
+          "draftkings": -230,
+          "avg": -227
+        },
+        "prediction": {
+          "method": "KO/TKO",
+          "round": 4
+        }
+      },
+      "F2": {
+        "selectionId": "benoit-saint-denis",
+        "wager": 50,
+        "odds": -157,
+        "oddsSource": "AVG",
+        "oddsSnapshotId": "ufc-329",
+        "oddsSnapshotLabel": "Manual market snapshot + AVG",
+        "oddsSources": {
+          "fanduel": -155,
+          "draftkings": -160,
+          "avg": -157
+        },
+        "prediction": {
+          "method": "KO/TKO",
+          "round": 2
+        }
+      },
+      "F3": {
+        "selectionId": "mario-bautista",
+        "wager": 50,
+        "odds": 132,
+        "oddsSource": "AVG",
+        "oddsSnapshotId": "ufc-329",
+        "oddsSnapshotLabel": "Manual market snapshot + AVG",
+        "oddsSources": {
+          "fanduel": 130,
+          "draftkings": 135,
+          "avg": 132
+        },
+        "prediction": {
+          "method": "Decision",
+          "round": null
+        }
+      },
+      "F4": {
+        "selectionId": "loneer-kavanagh",
+        "wager": 50,
+        "odds": -232,
+        "oddsSource": "AVG",
+        "oddsSnapshotId": "ufc-329",
+        "oddsSnapshotLabel": "Manual market snapshot + AVG",
+        "oddsSources": {
+          "fanduel": -235,
+          "draftkings": -230,
+          "avg": -232
+        },
+        "prediction": {
+          "method": "Decision",
+          "round": null
+        }
+      },
+      "F5": {
+        "selectionId": "terrance-mckinney",
+        "wager": 100,
+        "odds": -168,
+        "oddsSource": "AVG",
+        "oddsSnapshotId": "ufc-329",
+        "oddsSnapshotLabel": "Manual market snapshot + AVG",
+        "oddsSources": {
+          "fanduel": -166,
+          "draftkings": -170,
+          "avg": -168
+        },
+        "prediction": {
+          "method": "Submission",
+          "round": 1
+        }
+      }
+    },
+    "props": {
+      "fastestFinish": "F5",
+      "fightOfNight": "F4",
+      "totalDecisions": 2,
+      "totalFinishes": 3
+    },
+    "derivedProps": {
+      "fastestFinish": "F5",
+      "totalDecisions": 2,
+      "totalFinishes": 3
+    }
+  }
+],
 };
 
 window.RISKEM_EVENTS["ufc-324"] = UFC_329_EVENT;
