@@ -130,8 +130,41 @@
   function saveLocalImports(event, players) {
     try { localStorage.setItem(localKey(event), JSON.stringify(players, null, 2)); } catch (_) {}
   }
+  function playerIdentity(player) {
+    const submitted = String(player?.submittedAt || "").trim();
+    if (submitted) return `submitted:${submitted}`;
+
+    const name = normalizeText(player?.name || "");
+    const picks = JSON.stringify(player?.picks || {});
+    return `fallback:${name}:${picks}`;
+  }
+
+  function dedupePlayers(players) {
+    const seen = new Set();
+    const clean = [];
+
+    for (const player of players || []) {
+      const key = playerIdentity(player);
+      if (seen.has(key)) continue;
+      seen.add(key);
+      clean.push(player);
+    }
+
+    return clean;
+  }
+
+  function ignoredLocalDuplicateNames(event) {
+    const officialKeys = new Set(officialPlayers(event).map(playerIdentity));
+    return loadLocalImports(event)
+      .filter((player) => officialKeys.has(playerIdentity(player)))
+      .map((player) => player.name || "Unnamed");
+  }
+
   function allPlayers(event) {
-    return [...officialPlayers(event), ...loadLocalImports(event)];
+    // Official event-file players win over local test imports.
+    // This prevents double-counting after entries are promoted to events/<event>.js
+    // but browser local imports have not been cleared yet.
+    return dedupePlayers([...officialPlayers(event), ...loadLocalImports(event)]);
   }
   function totalWagered(player, event) {
     return (event.contests || []).reduce((sum, contest) => sum + Number(player.picks?.[contest.id]?.wager || 0), 0);
@@ -534,10 +567,11 @@
     return `${event.title || event.shortLabel || event.id} entries locked — ${count} player${count === 1 ? "" : "s"} · ${money(rules.budget)} budget · ${contestCount} ${noun}.`;
   }
 
-  function duplicateWarnings(players) {
+  function duplicateWarnings(players, event) {
     const warnings = [];
     const byName = {};
     const bySubmitted = {};
+    const ignoredNames = ignoredLocalDuplicateNames(event);
 
     for (const player of players || []) {
       const nameKey = normalizeText(player.name || "");
@@ -558,6 +592,10 @@
       warnings.push(`Duplicate submittedAt timestamps: ${duplicateTimes.map(([stamp, items]) => `${stamp} (${items.join(" / ")})`).join("; ")}`);
     }
 
+    if (ignoredNames.length) {
+      warnings.push(`Ignored ${ignoredNames.length} local duplicate${ignoredNames.length === 1 ? "" : "s"} already published: ${ignoredNames.join(" / ")}`);
+    }
+
     return warnings;
   }
 
@@ -570,12 +608,12 @@
     }
 
     const localCount = loadLocalImports(event).length;
-    const warnings = duplicateWarnings(players);
+    const warnings = duplicateWarnings(players, event);
     const warningBox = $("commissionerWarnings");
     if (warningBox) {
       const rules = resolvedRules(event);
       const lines = [
-        `${players.length} active player${players.length === 1 ? "" : "s"} · ${localCount} local import${localCount === 1 ? "" : "s"} · ${money(rules.budget)} budget`,
+        `${players.length} active player${players.length === 1 ? "" : "s"} · ${localCount} local import${localCount === 1 ? "" : "s"} saved · ${money(rules.budget)} budget`,
         ...warnings,
       ];
       warningBox.classList.toggle("notice", true);
