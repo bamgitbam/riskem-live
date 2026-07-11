@@ -14,6 +14,7 @@ const UFC_329_EVENT = {
   currency: "Fight Bucks",
   publicNote: "Main-card fight pool. Users pick winners, wagers, method, finish round where valid, and Fight of the Night. AVG odds plus fastest-finish/decision/finish props are automatic.",
   revealLockedPicks: true,
+  entriesLocked: false,
   rules: {
     unitPerContest: 100,
     minWagerPct: 0.25,

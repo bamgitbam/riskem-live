@@ -317,6 +317,7 @@
 
     renderLocked(event, sport, players);
     renderDetail(event, sport, players);
+    renderCommissionerTools(event, sport, players);
     setupImportTools(event, sport);
   }
 
@@ -478,6 +479,116 @@
   }
 
 
+
+  function copyText(text, label = "Text") {
+    const value = String(text || "");
+    if (navigator.clipboard?.writeText) {
+      return navigator.clipboard.writeText(value).then(
+        () => alert(`${label} copied.`),
+        () => fallbackCopyText(value, label),
+      );
+    }
+    return fallbackCopyText(value, label);
+  }
+
+  function fallbackCopyText(text, label) {
+    const node = document.createElement("textarea");
+    node.value = text;
+    node.setAttribute("readonly", "");
+    node.style.position = "fixed";
+    node.style.left = "-9999px";
+    document.body.appendChild(node);
+    node.select();
+    try {
+      document.execCommand("copy");
+      alert(`${label} copied.`);
+    } catch (_) {
+      alert(`Could not copy automatically. Select and copy the export text manually.`);
+    } finally {
+      document.body.removeChild(node);
+    }
+  }
+
+  function publicPlayersBlockText(players) {
+    return `players: ${JSON.stringify(players, null, 2)},`;
+  }
+
+  function localImportsJsonText(event) {
+    return JSON.stringify(loadLocalImports(event), null, 2);
+  }
+
+  function eventLockPatchText(event, players) {
+    return [
+      `// Paste inside window.RISKEM_EVENTS["${event.id}"] / event config object`,
+      `entriesLocked: true,`,
+      `revealLockedPicks: true,`,
+      publicPlayersBlockText(players),
+    ].join("\n");
+  }
+
+  function lockMessageText(event, sport, players) {
+    const rules = resolvedRules(event);
+    const count = players.length;
+    const contestCount = (event.contests || []).length;
+    const noun = sport.contestNounPlural || "Contests";
+    return `${event.title || event.shortLabel || event.id} entries locked — ${count} player${count === 1 ? "" : "s"} · ${money(rules.budget)} budget · ${contestCount} ${noun}.`;
+  }
+
+  function duplicateWarnings(players) {
+    const warnings = [];
+    const byName = {};
+    const bySubmitted = {};
+
+    for (const player of players || []) {
+      const nameKey = normalizeText(player.name || "");
+      if (nameKey) byName[nameKey] = [...(byName[nameKey] || []), player.name || "Unnamed"];
+
+      const submitted = String(player.submittedAt || "").trim();
+      if (submitted) bySubmitted[submitted] = [...(bySubmitted[submitted] || []), player.name || "Unnamed"];
+    }
+
+    const duplicateNames = Object.values(byName).filter((items) => items.length > 1);
+    const duplicateTimes = Object.entries(bySubmitted).filter(([, items]) => items.length > 1);
+
+    if (duplicateNames.length) {
+      warnings.push(`Duplicate player names: ${duplicateNames.map((items) => items.join(" / ")).join("; ")}`);
+    }
+
+    if (duplicateTimes.length) {
+      warnings.push(`Duplicate submittedAt timestamps: ${duplicateTimes.map(([stamp, items]) => `${stamp} (${items.join(" / ")})`).join("; ")}`);
+    }
+
+    return warnings;
+  }
+
+  function renderCommissionerTools(event, sport, players) {
+    const exportBox = $("publicPlayersBlock");
+    const playersBlock = publicPlayersBlockText(players);
+
+    if (exportBox) {
+      exportBox.value = playersBlock;
+    }
+
+    const localCount = loadLocalImports(event).length;
+    const warnings = duplicateWarnings(players);
+    const warningBox = $("commissionerWarnings");
+    if (warningBox) {
+      const rules = resolvedRules(event);
+      const lines = [
+        `${players.length} active player${players.length === 1 ? "" : "s"} · ${localCount} local import${localCount === 1 ? "" : "s"} · ${money(rules.budget)} budget`,
+        ...warnings,
+      ];
+      warningBox.classList.toggle("notice", true);
+      warningBox.innerHTML = lines.map((line, index) => index === 0 ? h(line) : `⚠ ${h(line)}`).join("<br>");
+    }
+
+    const lockText = $("lockMessagePreview");
+    if (lockText) {
+      lockText.textContent = lockMessageText(event, sport, players);
+    }
+  }
+
+
   function setupImportTools(event, sport) {
     if ($("saveLocalImport")) {
       $("saveLocalImport").onclick = () => {
@@ -495,24 +606,50 @@
         }
       };
     }
+
     if ($("clearLocalImports")) {
       $("clearLocalImports").onclick = () => {
         try { localStorage.removeItem(localKey(event)); } catch (_) {}
         renderScoreboard(event, sport);
       };
     }
+
     if ($("copyOfficialPlayers")) {
-      $("copyOfficialPlayers").onclick = async () => {
-        const text = JSON.stringify(allPlayers(event), null, 2);
-        await navigator.clipboard.writeText(text);
-        alert("Copied current players JSON.");
-      };
+      $("copyOfficialPlayers").onclick = () => copyText(JSON.stringify(allPlayers(event), null, 2), "Current players JSON");
+    }
+
+    if ($("copyPublicPlayersBlock")) {
+      $("copyPublicPlayersBlock").onclick = () => copyText(publicPlayersBlockText(allPlayers(event)), "Public players block");
+    }
+
+    if ($("copyLocalImportsJson")) {
+      $("copyLocalImportsJson").onclick = () => copyText(localImportsJsonText(event), "Local imports JSON");
+    }
+
+    if ($("copyEventLockPatch")) {
+      $("copyEventLockPatch").onclick = () => copyText(eventLockPatchText(event, allPlayers(event)), "Event lock patch");
+    }
+
+    if ($("copyLockMessage")) {
+      $("copyLockMessage").onclick = () => copyText(lockMessageText(event, sport, allPlayers(event)), "Lock message");
     }
   }
 
   function renderSubmit(event, sport) {
     const form = $("entryForm");
     if (!form) return;
+
+    if (event.entriesLocked) {
+      renderShell(event, sport);
+      form.innerHTML = `
+        <section class="panel">
+          <div class="section-head"><div><h2>Entries Locked</h2><div class="hint">The commissioner has locked this event. New public entries are closed.</div></div></div>
+          <div class="notice">Use the scoreboard to view locked picks, standings, and final scoring.</div>
+          <div class="top-actions"><a class="mini-link" href="./scoreboard.html?event=${encodeURIComponent(event.id)}">Open Scoreboard</a></div>
+        </section>`;
+      return;
+    }
+
     form.innerHTML = `
       <section class="panel">
         <div class="section-head"><div><h2>Your Entry</h2><div class="hint" id="rulesHint"></div></div></div>

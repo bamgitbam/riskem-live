@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="robots" content="noindex,nofollow" />
     <title>Risk’em Live Scoreboard</title>
-    <link rel="stylesheet" href="./assets/riskem.css?v=20260711-polish-cache1" />
+    <link rel="stylesheet" href="./assets/riskem.css?v=20260711-lockmode1" />
   </head>
   <body data-page="scoreboard">
     <div class="wrap">
@@ -68,27 +68,54 @@
       </section>
 
       <section class="panel">
-        <div class="section-head"><div><h2>Commissioner Local Test Import</h2><div class="hint">Paste one submission JSON or an array of submissions. This only saves to your browser for testing. To publish, copy the JSON into the event file.</div></div></div>
+        <div class="section-head">
+          <div>
+            <h2>Commissioner Local Test Import</h2>
+            <div class="hint">Paste one submission JSON or an array of submissions. Imports are validated before they are saved to this browser.</div>
+          </div>
+        </div>
         <textarea id="localImportInput" placeholder='Paste submission JSON here'></textarea>
         <div class="top-actions">
           <button type="button" id="saveLocalImport">Add Local Test Entries</button>
           <button type="button" class="secondary" id="clearLocalImports">Clear Local Test Entries</button>
+        </div>
+      </section>
+
+      <section class="panel">
+        <div class="section-head">
+          <div>
+            <h2>Commissioner Lock / Public Export</h2>
+            <div class="hint">Use this after entries are tested. Copy the public players block into the event file to publish the scoreboard.</div>
+          </div>
+        </div>
+        <div id="commissionerWarnings" class="notice"></div>
+        <label style="display:block;margin-top:12px;">
+          Public players block for event file
+          <textarea id="publicPlayersBlock" readonly placeholder="Validated players block will appear here"></textarea>
+        </label>
+        <div class="top-actions">
+          <button type="button" id="copyPublicPlayersBlock">Copy Public Players Block</button>
+          <button type="button" class="secondary" id="copyLocalImportsJson">Copy Local Imports JSON</button>
+          <button type="button" class="secondary" id="copyEventLockPatch">Copy Event Lock Patch</button>
+          <button type="button" class="secondary" id="copyLockMessage">Copy Lock Message</button>
           <button type="button" class="secondary" id="copyOfficialPlayers">Copy Current Players JSON</button>
         </div>
+        <div class="hint" style="margin-top:10px;">Lock message preview:</div>
+        <div class="fine" id="lockMessagePreview"></div>
       </section>
     </div>
 
-    <script src="./sports/soccer.js?v=20260711-polish-cache1"></script>
-    <script src="./sports/combat.js?v=20260711-polish-cache1"></script>
-    <script src="./sports/football.js?v=20260711-polish-cache1"></script>
-    <script src="./sports/racing.js?v=20260711-polish-cache1"></script>
-    <script src="./assets/odds-tools.js?v=20260711-polish-cache1"></script>
-    <script src="./events/f8wc-quarterfinals.js?v=20260711-polish-cache1"></script>
-    <script src="./events/ufc-324.js?v=20260711-polish-cache1"></script>
-    <script src="./events/odds/ufc-324-odds.js?v=20260711-polish-cache1"></script>
-    <script src="./events/nfl-week-template.js?v=20260711-polish-cache1"></script>
-    <script src="./events/boxing-card-template.js?v=20260711-polish-cache1"></script>
-    <script src="./events/racing-template.js?v=20260711-polish-cache1"></script>
-    <script src="./assets/riskem-core.js?v=20260711-polish-cache1"></script>
+    <script src="./sports/soccer.js?v=20260711-lockmode1"></script>
+    <script src="./sports/combat.js?v=20260711-lockmode1"></script>
+    <script src="./sports/football.js?v=20260711-lockmode1"></script>
+    <script src="./sports/racing.js?v=20260711-lockmode1"></script>
+    <script src="./assets/odds-tools.js?v=20260711-lockmode1"></script>
+    <script src="./events/f8wc-quarterfinals.js?v=20260711-lockmode1"></script>
+    <script src="./events/ufc-324.js?v=20260711-lockmode1"></script>
+    <script src="./events/odds/ufc-324-odds.js?v=20260711-lockmode1"></script>
+    <script src="./events/nfl-week-template.js?v=20260711-lockmode1"></script>
+    <script src="./events/boxing-card-template.js?v=20260711-lockmode1"></script>
+    <script src="./events/racing-template.js?v=20260711-lockmode1"></script>
+    <script src="./assets/riskem-core.js?v=20260711-lockmode1"></script>
   </body>
 </html>

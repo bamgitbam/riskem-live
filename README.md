@@ -335,6 +335,34 @@ Local test imports are labeled as active on this device only.
 User-side fastest finish is labeled Predicted fastest finish.
 ```
 
+
+## Commissioner lock workflow
+
+The scoreboard includes a commissioner export panel.
+
+Use it to promote local test entries into the public event file:
+
+```text
+1. Paste and validate local submissions
+2. Review Standings and Locked Picks
+3. Copy Public Players Block
+4. Paste into events/<event-id>.js, replacing players: []
+5. Optional: set entriesLocked: true
+6. Commit and push
+```
+
+The export panel also provides:
+
+```text
+Copy Local Imports JSON
+Copy Event Lock Patch
+Copy Lock Message
+Duplicate-name warnings
+Duplicate submittedAt warnings
+```
+
+When `entriesLocked: true`, the entry page closes and shows an Entries Locked notice.
+
 ## Existing F8WC safety
 
 Do not overwrite the existing live F8WC repo root unless you are ready to promote this version.
