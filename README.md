@@ -1,0 +1,270 @@
+# Risk’em Live
+
+Risk’em Live is a static, GitHub Pages-friendly multi-sport pick’em / odds-pool app.
+
+It started as F8WC Risk’em and now supports a single reusable codebase for:
+
+```text
+Soccer
+UFC / MMA
+Boxing
+American football
+Racing
+Future sports through adapters
+```
+
+No backend is required for the public app.
+
+## Current ready events
+
+```text
+index.html?event=ufc-324
+scoreboard.html?event=ufc-324
+
+index.html?event=f8wc-quarterfinals
+scoreboard.html?event=f8wc-quarterfinals
+
+index.html?event=nfl-week-template
+scoreboard.html?event=nfl-week-template
+
+index.html?event=boxing-card-template
+scoreboard.html?event=boxing-card-template
+
+index.html?event=racing-template
+scoreboard.html?event=racing-template
+```
+
+## File structure
+
+```text
+index.html
+scoreboard.html
+
+assets/
+  riskem-core.js
+  riskem.css
+  odds-tools.js
+
+sports/
+  soccer.js
+  combat.js
+  football.js
+  racing.js
+
+events/
+  f8wc-quarterfinals.js
+  ufc-324.js
+  nfl-week-template.js
+  boxing-card-template.js
+  racing-template.js
+  odds/
+    ufc-324-odds.js
+
+tools/
+  pull-odds.mjs
+
+.github/
+  workflows/
+    update-odds.yml
+    update-odds-scheduled.example.yml
+```
+
+## How the sport switch works
+
+The URL controls the event:
+
+```text
+scoreboard.html?event=ufc-324
+```
+
+The event file declares which sport adapter it uses:
+
+```js
+sport: "combat"
+```
+
+The shared core then uses that adapter for labels, prediction fields, bonuses, props, and result formatting.
+
+## UFC 324 quick workflow
+
+1. Open:
+
+```text
+index.html?event=ufc-324
+```
+
+2. Players enter:
+   - winner
+   - wager
+   - locked odds
+   - method
+   - round
+   - event props
+
+3. Player copies the generated JSON.
+
+4. Commissioner tests entries at:
+
+```text
+scoreboard.html?event=ufc-324
+```
+
+Use **Commissioner Local Test Import** to paste one entry or an array of entries.
+
+5. To publish entries, paste finalized player objects into:
+
+```text
+events/ufc-324.js
+```
+
+under:
+
+```js
+players: []
+```
+
+6. After fights finish, update:
+
+```js
+results
+finalProps
+```
+
+in the same event file.
+
+## Combat scoring
+
+For UFC / MMA / boxing style events:
+
+```text
+Correct winner = locked-odds wager profit
+Wrong winner = loses wager
+Correct method = +25
+Correct round = +25
+Final props apply only when finalProps.complete is true
+```
+
+## Soccer scoring
+
+The F8WC event preserves the current soccer rules:
+
+```text
+Correct advancing team = locked-odds wager profit
+Wrong pick = loses wager
+Exact score = +50
+Correct margin = +25
+Correct total goals = +15
+One team score exact = +10
+Proper Stars only score when finalProps.complete is true
+```
+
+## Odds board
+
+The odds layer supports:
+
+```text
+FanDuel
+DraftKings
+AVG
+```
+
+AVG is calculated by:
+
+```text
+American odds → implied probability
+average implied probabilities
+implied probability → American odds
+```
+
+This is safer than directly averaging American odds.
+
+## Manual odds snapshot
+
+Edit:
+
+```text
+events/odds/ufc-324-odds.js
+```
+
+Example:
+
+```js
+"max-holloway": { fanduel: -135, draftkings: -140, avg: null }
+```
+
+Leave `avg: null` to let the app calculate AVG.
+
+## Pull odds locally
+
+Create an `.env` file or set the variable in PowerShell:
+
+```powershell
+$env:ODDS_API_KEY="your-api-key"
+node tools/pull-odds.mjs ufc-324 mma_mixed_martial_arts
+```
+
+Then commit the generated odds file:
+
+```powershell
+git add events/odds/ufc-324-odds.js
+git commit -m "Update UFC 324 odds snapshot"
+git push
+```
+
+## Pull odds with GitHub Actions
+
+Add a repo secret:
+
+```text
+Settings → Secrets and variables → Actions → New repository secret
+
+Name: ODDS_API_KEY
+Value: your key
+```
+
+Then run:
+
+```text
+Actions → Update Odds Snapshot → Run workflow
+```
+
+Use:
+
+```text
+event_id: ufc-324
+sport_key: mma_mixed_martial_arts
+```
+
+The public site never receives the API key. GitHub Actions pulls the odds and commits a static snapshot.
+
+## New repo deployment
+
+Recommended repo name:
+
+```text
+riskem-live
+```
+
+Deploy with GitHub Pages from:
+
+```text
+main branch / root
+```
+
+See:
+
+```text
+docs/NEW_REPO_SETUP.md
+```
+
+## Existing F8WC safety
+
+Do not overwrite the existing live F8WC repo root unless you are ready to promote this version.
+
+Safe testing options:
+
+```text
+New repo: riskem-live
+Existing repo sandbox: /v2/
+```
+# riskem-live
