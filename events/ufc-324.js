@@ -12,9 +12,9 @@ const UFC_329_EVENT = {
   subtitle: "McGregor vs Holloway 2 · Main Card · Saturday 6:00 PM",
   shortLabel: "UFC 329",
   currency: "Fight Bucks",
-  publicNote: "Main-card fight pool. Users pick winners, wagers, method, finish round where valid, and Fight of the Night. AVG odds plus fastest-finish/decision/finish props are automatic.",
+  publicNote: "Final results loaded. Scoreboard shows Fight Bucks, fight-result bonuses, fastest finish, Fight of the Night, total decisions, and total finishes.",
   revealLockedPicks: true,
-  entriesLocked: false,
+  entriesLocked: true,
   rules: {
     unitPerContest: 100,
     minWagerPct: 0.25,
@@ -122,19 +122,31 @@ const UFC_329_EVENT = {
   propDefaults: {
     fightOfNight: "F4",
   },
+/*
+  UFC 329 final result notes:
+  - F1: Holloway def. McGregor by KO/TKO, R1 1:09.
+  - F2: Pimblett def. Saint-Denis by Submission, R1 0:52.
+  - F3: Bautista def. Sandhagen by Decision.
+  - F4: Royval def. Kavanagh by Submission, R3 3:40.
+  - F5: Green def. McKinney by KO/TKO, R1 4:59.
+  - Fastest finish: F2.
+  - Fight of the Night: F4.
+  - Total decisions: 1.
+  - Total finishes: 4.
+*/
   results: {
-    F1: { complete: false, winnerId: "", method: "", round: null, time: "" },
-    F2: { complete: false, winnerId: "", method: "", round: null, time: "" },
-    F3: { complete: false, winnerId: "", method: "", round: null, time: "" },
-    F4: { complete: false, winnerId: "", method: "", round: null, time: "" },
-    F5: { complete: false, winnerId: "", method: "", round: null, time: "" },
+    F1: { complete: true, winnerId: "max-holloway", method: "KO/TKO", round: 1, time: "1:09" },
+    F2: { complete: true, winnerId: "paddy-pimblett", method: "Submission", round: 1, time: "0:52" },
+    F3: { complete: true, winnerId: "mario-bautista", method: "Decision", round: null, time: "" },
+    F4: { complete: true, winnerId: "brandon-royval", method: "Submission", round: 3, time: "3:40" },
+    F5: { complete: true, winnerId: "king-green", method: "KO/TKO", round: 1, time: "4:59" },
   },
   finalProps: {
-    complete: false,
-    fastestFinish: "",
-    fightOfNight: "",
-    totalDecisions: null,
-    totalFinishes: null,
+    complete: true,
+    fastestFinish: "F2",
+    fightOfNight: "F4",
+    totalDecisions: 1,
+    totalFinishes: 4,
   },
   players: [],
 };
